@@ -1,0 +1,52 @@
+[
+  {
+    "isin": "IN0020240001",
+    "name": "GS 7.10% 2029",
+    "face": 100.0,
+    "coupon_rate": 0.071,
+    "maturity_date": "2029-04-08",
+    "frequency": 2,
+    "issue_date": "2024-04-08",
+    "current_yield": 7.02
+  },
+  {
+    "isin": "IN0020240002",
+    "name": "GS 7.18% 2033",
+    "face": 100.0,
+    "coupon_rate": 0.0718,
+    "maturity_date": "2033-07-24",
+    "frequency": 2,
+    "issue_date": "2024-07-24",
+    "current_yield": 7.05
+  },
+  {
+    "isin": "IN0020240003",
+    "name": "GS 7.25% 2036",
+    "face": 100.0,
+    "coupon_rate": 0.0725,
+    "maturity_date": "2036-06-22",
+    "frequency": 2,
+    "issue_date": "2024-06-22",
+    "current_yield": 7.1
+  },
+  {
+    "isin": "IN0020240004",
+    "name": "GS 6.99% 2026",
+    "face": 100.0,
+    "coupon_rate": 0.0699,
+    "maturity_date": "2026-12-15",
+    "frequency": 2,
+    "issue_date": "2021-12-15",
+    "current_yield": 6.8
+  },
+  {
+    "isin": "IN0020240005",
+    "name": "GS 7.30% 2053",
+    "face": 100.0,
+    "coupon_rate": 0.073,
+    "maturity_date": "2053-06-19",
+    "frequency": 2,
+    "issue_date": "2023-06-19",
+    "current_yield": 7.18
+  }
+]

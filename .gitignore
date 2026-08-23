@@ -1,0 +1,21 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+backend/.pytest_cache/
+backend/treasuryx.db
+backend/app/data/uploads/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env
+.env
+backend/.env
+
+# OS / editor
+.DS_Store
+*.log

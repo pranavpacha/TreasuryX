@@ -1,0 +1,20 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - TREASURYX_DATABASE_URL=sqlite:///./treasuryx.db
+      - TREASURYX_DATA_MODE=demo
+    volumes:
+      - backend-data:/app/data-persisted
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:
