@@ -32,7 +32,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.cors_origin_list,
     # No cookie/session auth is used anywhere in the app, so credentials aren't needed --
     # keeping this False allows TREASURYX_CORS_ORIGINS="*" to work for a public demo deploy.
     allow_credentials=False,
