@@ -1,0 +1,37 @@
+# Render Blueprint — deploys both services from this one repo.
+# In the Render dashboard: New -> Blueprint -> connect this repo -> Apply.
+#
+# Render assigns each service a URL of the form https://<name>.onrender.com if that
+# name is free (it appends a suffix if taken). The env vars below assume the names
+# stay available; if Render renames a service, update TREASURYX_CORS_ORIGINS (on the
+# backend service) and VITE_API_BASE_URL (on the frontend service) to match the
+# actual assigned URLs, then trigger a manual redeploy of the frontend (env vars are
+# baked in at build time for Vite).
+#
+# Free-tier note: both services spin down after ~15 min idle and cold-start on the
+# next request (can take ~30-60s). The backend's SQLite file is on ephemeral disk, so
+# any simulated trades/positions/scenarios booked during a session are reset on
+# restart -- fine for a demo, since all reference/demo data reseeds automatically.
+
+services:
+  - type: web
+    name: treasuryx-backend
+    env: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: TREASURYX_CORS_ORIGINS
+        value: https://treasuryx-frontend.onrender.com
+      - key: TREASURYX_DATABASE_URL
+        value: sqlite:////app/treasuryx.db
+
+  - type: web
+    name: treasuryx-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://treasuryx-backend.onrender.com/api

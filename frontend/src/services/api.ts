@@ -1,6 +1,11 @@
 import axios from "axios";
 
-export const api = axios.create({ baseURL: "/api" });
+// In local dev, Vite proxies "/api" to the backend (see vite.config.ts).
+// In production, set VITE_API_BASE_URL to the deployed backend's full URL, e.g.
+// https://treasuryx-backend.onrender.com/api
+const baseURL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api";
+
+export const api = axios.create({ baseURL });
 
 export interface FxQuote {
   pair: string;

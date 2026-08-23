@@ -11,6 +11,7 @@ backend/app/data/uploads/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/tsconfig.tsbuildinfo
 
 # Env
 .env
