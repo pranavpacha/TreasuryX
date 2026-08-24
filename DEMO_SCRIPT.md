@@ -1,77 +1,70 @@
 # TreasuryX Demo Script
 
-Three focused walkthroughs (~5-7 minutes each), designed to stand alone for a Treasury-focused,
-Computer-Vision-focused, or Computer-Graphics-focused audience. All three can also be run
-back-to-back (~18-20 min) to tell the full integration story. Toggle **Academic Mode** (top-right
-of the header) to reveal the CV Lab / Graphics Lab / Academic & Documentation nav sections used
-in Demos 2 and 3.
+**One integrated walkthrough (~10-12 min)** — not three separate lab tours. Computer Vision and
+Computer Graphics show up as real capabilities inside the Treasury workflow, not as detours into
+an academic lab. The same script (slightly condensed) is also rendered in-app at
+**Methodology → Demo Guide** if you'd rather present from the browser.
 
-## Demo 1 — Treasury Workflow (~5-7 min)
+## 1. Workstation baseline (~3 min)
 
 1. **Overview** — point out the Total P&L / VaR / DV01 / Market Regime cards (each with unit +
-   method label, never a bare number), FX/curve snapshot, and market-intelligence event feed.
-2. **FX Desk** — book a simulated USD/INR trade (note the SIMULATED badge); show the updated
-   row in Open FX Positions with entry rate, current rate, and P&L.
-3. **Rates & Bonds** — select a G-Sec; show clean price, modified duration, convexity, DV01 with
-   their tooltips (bump-and-reprice methodology).
-4. **Yield Curve** — compare two dates ~20 business days apart; show the curve-shift table and the
-   steepening/flattening classification rule.
-5. **Portfolio Risk** — toggle 95%→99% VaR confidence, note it increases; point out the
-   "no look-ahead bias" note.
-6. **Stress Testing** — run "Combined stress: USD/INR +2%, 2Y +10bp, 10Y +50bp"; walk through the
-   **Methodology / Audit Trail** section (`SCN-00xxx` id, exact-vs-duration-approx note,
-   deterministic-no-AI note, raw inputs JSON).
-7. **Trade Blotter** — show every simulated trade booked so far.
+   method label), the **Data Status** panel, and the small **Technology Integration** panel
+   (FOCV / Treasury Engine / CGVR — subtle, professional, not a badge farm).
+2. **FX Desk** — book a simulated USD/INR trade; show the updated row in Open FX Positions.
+3. **Rates & Bonds** — select a G-Sec; show clean price, modified duration, convexity, DV01.
+4. **Portfolio Risk** — toggle 95%→99% VaR confidence, note it increases.
+5. **Stress Testing** — run "Combined stress: USD/INR +2%, 2Y +10bp, 10Y +50bp"; walk through the
+   audit trail (`SCN-00xxx`, inputs, exact-vs-duration-approx note, deterministic-no-AI note).
 
-## Demo 2 — Computer Vision (~5-7 min)
+## 2. Financial Image Intelligence — the Computer Vision integration (~4 min)
 
-Grounds every step in **CS4231 Fundamentals of Computer Vision**'s actual module/lab structure.
+1. Open **Financial Image Intelligence**, upload a chart/report screenshot mentioning a bond ISIN
+   or FX pair and a value.
+2. Point at the extracted field row; click **How Detected?** to reveal the preprocessing → OCR →
+   pairing trace for that specific value.
+3. Expand **Processing Details** to show every pipeline-stage image (original → grayscale →
+   denoised → CLAHE → threshold → Canny → region) — real OpenCV output, not a mockup.
+4. Edit the extracted value in the input box, click **Apply to Treasury** — show the "Portfolio
+   updated" confirmation with before/after clean price and DV01.
+5. Navigate to **Rates & Bonds** and **Portfolio Risk** — the correction is visibly reflected there
+   too, because it went through the same effective-market-view layer the rest of the app reads
+   from, not a one-off calculation shown once and discarded.
+6. Open **Compare Market Screens**, upload two related screenshots, show SIFT keypoint matching
+   with the confident-match count and visualization.
 
-1. **Market Intelligence** — upload a chart screenshot; walk through all 7 pipeline stages
-   (original → grayscale → denoised → CLAHE-normalized → thresholded → Canny edges → detected
-   region), then the OCR text and structured field table; manually correct a value and
-   **Commit → Engine**.
-2. **Academic Mode → CV Lab home** — show the full lab list, each tagged to a specific
-   module/lab requirement.
-3. **Filters lab** — compare Gaussian/median/bilateral/CLAHE side by side.
-4. **Edges lab** — adjust the Canny low/high sliders live; compare DoG vs LoG vs Sobel/Laplacian.
-5. **SIFT lab** — upload two related images; show keypoint counts and Lowe's-ratio-test matches.
-6. **Segmentation lab** — show the real IoU/Dice benchmark computed on synthetic ground truth
-   (mean IoU ≈0.96 as of this build), then try GrabCut on your own image.
-7. **CNN vs ViT (Model Benchmarks)** — walk through both models' accuracy/precision/recall/F1,
-   confusion matrices, training curves, and sample predictions — both trained from scratch on the
-   *same* synthetic dataset for a fair comparison.
-8. **Object Detection lab** — show the honest `NOT_TRAINED` status and the documented reason
-   (Fast R-CNN/YOLO need GPU-scale training + a large labeled dataset, out of scope for a laptop
-   build) plus the reproducible pipeline spec.
+## 3. 3D Market — the Computer Graphics integration (~4 min)
 
-## Demo 3 — Computer Graphics (~5-7 min)
+1. Open **3D Market → 3D Yield Surface**. Rotate/zoom; note it reflects the correction just
+   applied in step 2.
+2. Toggle **Perspective / Orthographic** — the camera projection genuinely switches (compare how
+   the surface's apparent depth changes).
+3. Open **Graphics Details** — show the live Model/View/Projection matrices updating as you orbit
+   the camera (these are read directly from the Three.js renderer, not hand-typed examples).
+4. Switch to **Risk View** — the same data now renders through the hand-written GLSL shader;
+   adjust the threshold slider live and watch the color band move.
+5. Open **Explain This Visualization** — walk through the data → geometry → model transform → view
+   transform → projection → depth → lighting/shading trace, tailored to the current settings.
+6. Switch to **3D Portfolio Stress Surface** — run a scenario shock first (back on Stress Testing),
+   then return and show the surface reflects it.
 
-Grounds every step in **CS4104 Computer Graphics and Virtual Reality**'s actual module/lab
-structure.
+## 4. Methodology — documentation, not a fourth demo (~2 min)
 
-1. **Raster Graphics lab** — step through DDA and Bresenham pixel-by-pixel on the 32x32 grid,
-   then the Midpoint Circle algorithm; show the RGB/CMY/HSV round-trip widget.
-2. **2D Transform & Clip lab** — compose translate/rotate/scale/shear, read the live homogeneous
-   3x3 matrix; run Cohen-Sutherland and Liang-Barsky clipping on the same line and compare their
-   step-by-step logs.
-3. **3D Transform & Shader lab** — rotate/scale a 3D box, read the live Model/View/Projection
-   matrices (computed by Three.js, not simulated); compare perspective vs orthographic side by
-   side; adjust ambient/directional lighting intensity.
-4. **Custom shader section** (same page) — adjust the risk-threshold uniform on the real
-   yield-curve-driven GLSL shader surface; expand "View shader source" to show the actual GLSL.
-5. **Depth Buffer lab** — show the from-scratch software Z-buffer result (correct occlusion by
-   depth, not draw order), then toggle WebGL depth-test on/off on two overlapping planes.
-6. **3D Market** (outside Academic Mode) — rotate the yield/volatility/stress surfaces built from
-   live Treasury data — closes the loop from graphics theory to the actual application.
+1. **Course Mapping** — the syllabus-grounded table: implemented / partial / not-implemented, with
+   reasons, for both CS4231 and CS4104.
+2. **Computer Vision Methodology** / **Computer Graphics Methodology** — the written pipeline docs
+   matching exactly what was just shown live, including why CNN/ViT and deep object detection are
+   kept as evaluation exercises rather than claimed production capabilities.
+3. **Technical Evidence** — point out the supplementary pages (raster algorithms, 2D transforms,
+   CNN vs. ViT benchmarks, VR/AR concepts) — syllabus topics with no natural Treasury use, kept as
+   direct evidence rather than forced into the product.
 
-## Integration Story (close every demo with this)
+## Integration Story (close with this)
 
 ```
 financial chart image → Computer Vision extraction → structured financial value
-   → Treasury analytics (P&L / risk) → 3D visualization
+   → Treasury analytics (P&L / risk) → Computer Graphics visualization
 ```
 
-Both academic subjects and the Treasury domain meet in this one pipeline rather than existing as
-three unrelated mini-projects. See **Academic Mode → Course Mapping** for the full syllabus
-cross-reference, and [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md) for the written version.
+Both academic subjects and the Treasury domain meet in this one pipeline, inside one product —
+not as three unrelated demos bolted together. See [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md) for
+the full syllabus cross-reference.

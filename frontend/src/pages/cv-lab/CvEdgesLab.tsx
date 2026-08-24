@@ -9,7 +9,7 @@ export default function CvEdgesLab() {
 
   return (
     <SingleUploadLab<LabImageResult>
-      title="Edge Detection Lab"
+      title="Edge Detection — Technical Evidence"
       description="CS4231 Module 2 lab: 'Implement Edge detection using DoG, LoG, Canny and Hough Transform.' Shows Sobel X/Y, gradient magnitude, Laplacian, Difference-of-Gaussians (DoG), Laplacian-of-Gaussian (LoG), and Canny with adjustable thresholds. (Hough line detection is demonstrated on the Market Intelligence page's region-detection stage.)"
       run={(file) => runEdgesLab(file, cannyLow, cannyHigh, 1.0, 2.0)}
       controls={(rerun) => (

@@ -6,7 +6,7 @@ import { runOpticalFlowLab } from "../../services/academicCvApi";
 export default function CvOpticalFlowLab() {
   return (
     <DualUploadLab<OpticalFlowResult>
-      title="Optical Flow Lab"
+      title="Optical Flow — Technical Evidence"
       description="CS4231 Module 2: 'Optical Flow.' Dense Farneback optical flow estimates a per-pixel motion field between two frames. Upload two snapshots of a moving/updating chart, or upload just one image -- a synthetically shifted second frame will be generated for demonstration."
       run={runOpticalFlowLab}
       secondOptional

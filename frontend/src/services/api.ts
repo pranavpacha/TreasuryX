@@ -18,6 +18,7 @@ export interface FxQuote {
   date: string;
   source: string;
   is_demo: boolean;
+  is_cv_corrected?: boolean;
 }
 
 export interface FxHistoryPoint {
@@ -48,6 +49,7 @@ export interface Bond {
   macaulay_duration: number;
   convexity: number;
   dv01_per_100_face: number;
+  is_cv_corrected?: boolean;
 }
 
 export interface BondPositionView {
@@ -93,12 +95,16 @@ export interface RiskSummary {
 
 export interface Overview {
   as_of: string;
-  fx_snapshot: { pair: string; rate: number }[];
+  fx_snapshot: { pair: string; rate: number; is_cv_corrected?: boolean }[];
   curve_snapshot: { tenor: string; yield_pct: number }[];
   selected_bond: { isin: string; name: string; current_yield_pct: number } | null;
   risk: RiskSummary;
   market_events: { headline: string; category: string; severity: string; created_at: string }[];
   is_demo: boolean;
+  data_status: {
+    mode: string; last_updated: string | null; source: string;
+    active_cv_corrections: { instrument_type: string; instrument_id: string; field: string; value: number; applied_at: string }[];
+  };
   disclaimer: string;
 }
 
@@ -129,6 +135,11 @@ export interface ScenarioResponse {
   method_notes: string[];
 }
 
+export interface CvField {
+  instrument: string | null; metric: string | null; value: number | null;
+  unit: string | null; confidence: number; source_region: number[] | null;
+}
+
 export interface CvExtractionResult {
   id: number;
   original_filename: string;
@@ -136,12 +147,24 @@ export interface CvExtractionResult {
   stages: Record<string, string>;
   ocr_text_raw: string;
   ocr_available: boolean;
-  fields: {
-    instrument: string | null; metric: string | null; value: number | null;
-    unit: string | null; confidence: number; source_region: number[] | null;
-  }[];
+  fields: CvField[];
   mean_confidence: number;
   warnings: string[];
+}
+
+export interface CvCommitResult {
+  instrument_id: string;
+  field: string;
+  previous_value: number;
+  new_value: number;
+  delta?: number;
+  delta_bps?: number;
+  clean_price_before?: number;
+  clean_price_after?: number;
+  modified_duration_after?: number;
+  convexity_after?: number;
+  dv01_per_100_face_after?: number;
+  affected_open_positions: Record<string, unknown>[];
 }
 
 export const fetchOverview = () => api.get<Overview>("/overview").then((r) => r.data);
@@ -180,8 +203,12 @@ export const uploadCvImage = (file: File) => {
   form.append("file", file);
   return api.post<CvExtractionResult>("/cv/extract", form, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
 };
+export const correctCvExtraction = (extraction_id: number, corrected_fields: CvField[]) =>
+  api.post("/cv/correct", { extraction_id, corrected_fields }).then((r) => r.data);
 export const commitCvExtraction = (extraction_id: number, target: string, instrument_id: string) =>
-  api.post("/cv/commit", { extraction_id, target, instrument_id }).then((r) => r.data);
+  api.post<CvCommitResult>("/cv/commit", { extraction_id, target, instrument_id }).then((r) => r.data);
+export const fetchCvOverrides = () => api.get("/cv/overrides").then((r) => r.data);
+export const resetCvOverrides = () => api.delete("/cv/overrides").then((r) => r.data);
 
 export const fetchYieldSurface = (nDates = 30) =>
   api.get<{ dates: string[]; points: { date: string; tenor: string; years: number; yield_pct: number }[] }>(

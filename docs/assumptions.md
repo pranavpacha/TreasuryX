@@ -64,10 +64,11 @@ Every simplification made for this educational build, in one place, with the rea
 
 ## Graphics
 
-- **One custom GLSL shader was written** (`frontend/src/three/ShaderYieldSurface.tsx`, applied to
-  real yield-curve data), covering the syllabus's shader-programming lab requirement. The
-  integrated 3D Market views (`SurfacePlot.tsx`) still use built-in Three.js materials, which were
-  judged sufficient for that use case.
+- **One custom GLSL shader was written** (`frontend/src/three/SurfacePlot.tsx` —
+  `RISK_VERTEX_SHADER`/`RISK_FRAGMENT_SHADER`), covering the syllabus's shader-programming lab
+  requirement, and it's used in **production** by every 3D Market surface's "Risk View" toggle —
+  not a separate demo copy. "Market View" continues to use built-in Three.js materials, which were
+  judged sufficient for that presentation mode.
 - **No VR/stereo rendering** — by design, per the project's own "must run on a normal laptop, no VR
   hardware" requirement. VR/AR/XR syllabus modules are documented conceptually only
   (`VrArConceptsLab.tsx`).

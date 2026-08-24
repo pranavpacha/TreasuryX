@@ -12,6 +12,7 @@ from app.models.position import Position
 from app.models.trade import Trade
 from app.risk.aggregator import get_fx_positions
 from app.schemas.positions import PositionCreate, TradeOut
+from app.services.market_view import effective_fx_quotes
 
 router = APIRouter(prefix="/api/fx", tags=["fx"])
 
@@ -19,8 +20,8 @@ SUPPORTED_PAIRS = ["USDINR", "EURINR", "GBPINR", "EURUSD"]
 
 
 @router.get("/quotes")
-def get_quotes(provider: MarketDataProvider = Depends(get_provider)):
-    quotes = provider.get_all_fx_latest()
+def get_quotes(db: Session = Depends(get_db), provider: MarketDataProvider = Depends(get_provider)):
+    quotes = effective_fx_quotes(db, provider)
     out = []
     for q in quotes:
         hist = [x.rate for x in provider.get_fx_history(q.pair, 30)]
@@ -30,7 +31,7 @@ def get_quotes(provider: MarketDataProvider = Depends(get_provider)):
         out.append({
             "pair": q.pair, "rate": q.rate, "bid": q.bid, "ask": q.ask, "spread": round(q.ask - q.bid, 4),
             "day_return_pct": day_ret, "annualized_vol_pct": vol, "date": q.date,
-            "source": q.source, "is_demo": q.is_demo,
+            "source": q.source, "is_demo": q.is_demo, "is_cv_corrected": q.source == "CV_CORRECTED",
         })
     return out
 

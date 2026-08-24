@@ -16,6 +16,7 @@ PostgreSQL DSN requires no schema changes.
 | `risk_metrics` | `RiskMetricSnapshot` | Point-in-time risk metric snapshots (reserved for future use) |
 | `scenarios` | `ScenarioRun` | Every scenario/stress run: inputs, outputs, total P&L — the audit trail |
 | `cv_extractions` | `CvExtraction` | Every CV upload: filenames, extracted/corrected JSON, confidence, commit flag |
+| `market_overrides` | `MarketOverride` | **The CV-to-Treasury state-change mechanism**: latest-wins correction per (instrument_type, instrument_id, field), applied on top of baseline demo data by `services/market_view.py` — this is what makes "Apply to Treasury" a real, persistent change instead of a one-off calculation |
 | `market_events` | `MarketEvent` | Demo market-intelligence headlines shown on the Overview page |
 | `audit_logs` | `AuditLog` | Generic append-only audit entries (CV corrections/commits, etc.) |
 

@@ -26,7 +26,7 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     from app.models import (  # noqa: F401
-        audit_log, bond, cv_extraction, fx_quote, market_event,
+        audit_log, bond, cv_extraction, fx_quote, market_event, market_override,
         pnl_snapshot, position, risk_metric, scenario, trade, yield_curve,
     )
     Base.metadata.create_all(bind=engine)

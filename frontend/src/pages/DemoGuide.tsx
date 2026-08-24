@@ -11,52 +11,59 @@ function DemoSteps({ steps }: { steps: string[] }) {
 export default function DemoGuide() {
   return (
     <div>
-      <Panel title="Demo Guide — Three Focused Walkthroughs">
+      <Panel title="Demo Guide — One Integrated Walkthrough (~10-12 min)">
         <p style={{ fontSize: 12, color: "var(--text-mid)" }}>
-          Full script with timings: see <code>DEMO_SCRIPT.md</code> in the repository. Each demo below runs
-          ~5-7 minutes and is designed to stand alone for a Treasury, CV, or Graphics-focused audience.
+          Full script with timings: see <code>DEMO_SCRIPT.md</code> in the repository. This is ONE Treasury
+          workstation demo, not three separate lab tours — Computer Vision and Computer Graphics show up as real
+          capabilities inside the workflow, not as detours.
         </p>
       </Panel>
 
-      <Panel title="Demo 1 — Treasury Workflow (~5-7 min)">
+      <Panel title="1. Workstation baseline (~3 min)">
         <DemoSteps steps={[
-          "Overview: point out P&L / VaR / DV01 / Regime cards, each with unit + method label.",
+          "Overview: point out P&L / VaR / DV01 / Regime cards, Data Status, and the Technology Integration panel.",
           "FX Desk: book a simulated USD/INR trade, show updated MTM P&L.",
           "Rates & Bonds: select a G-Sec, show duration/convexity/DV01.",
-          "Yield Curve: compare two dates, show the shift table and steepening/flattening classification.",
-          "Risk: toggle 95%/99% VaR confidence, note the change.",
-          "Scenario/Stress: run a combined FX+yield shock, walk through the audit trail (SCN-xxxxx).",
+          "Portfolio Risk: toggle 95%/99% VaR confidence.",
+          "Stress Testing: run a combined FX+yield shock, walk through the audit trail (SCN-xxxxx).",
         ]} />
       </Panel>
 
-      <Panel title="Demo 2 — Computer Vision (~5-7 min)">
+      <Panel title="2. Financial Image Intelligence — the Computer Vision integration (~4 min)">
         <DemoSteps steps={[
-          "Market Intelligence: upload a chart screenshot, walk through all 7 pipeline stages.",
-          "CV Lab home: show the full lab list mapped to CS4231 modules.",
-          "Filters/Edges labs: adjust Canny thresholds live, compare DoG vs LoG.",
-          "SIFT lab: upload two related images, show keypoint matching with the ratio test.",
-          "Segmentation lab: show the real IoU/Dice benchmark on synthetic ground truth.",
-          "Model Benchmarks: CNN vs ViT accuracy, confusion matrices, training curves, sample predictions.",
-          "Object Detection lab: show the honest NOT_TRAINED status and documented reasoning.",
+          "Open Financial Image Intelligence, upload a chart/report screenshot mentioning a bond ISIN or FX pair and a value.",
+          "Show the extracted field, click 'How Detected?' to reveal the preprocessing → OCR → pairing trace.",
+          "Expand 'Processing Details' to show every pipeline stage image (this is real OpenCV, not a mockup).",
+          "Edit the extracted value, click 'Apply to Treasury' — show the 'Portfolio updated' confirmation with before/after price and DV01.",
+          "Jump to Rates & Bonds and Portfolio Risk — the correction is visibly reflected there too (same effective-market-view layer, not a one-off calculation).",
+          "Open Compare Market Screens, upload two related screenshots, show SIFT keypoint matching finding shared/changed regions.",
         ]} />
       </Panel>
 
-      <Panel title="Demo 3 — Computer Graphics (~5-7 min)">
+      <Panel title="3. 3D Market — the Computer Graphics integration (~4 min)">
         <DemoSteps steps={[
-          "Raster lab: step through DDA and Bresenham pixel-by-pixel, then the Midpoint Circle algorithm.",
-          "2D Transform lab: compose translate/rotate/scale/shear, show the live homogeneous matrix; run Cohen-Sutherland and Liang-Barsky clipping on the same line.",
-          "3D Graphics lab: rotate/scale a 3D object, read out the live Model/View/Projection matrices; compare perspective vs orthographic; adjust ambient/directional lighting.",
-          "Depth Buffer lab: show the from-scratch software Z-buffer result, then toggle WebGL depth-test on/off.",
-          "Custom shader section: adjust the risk-threshold uniform on the real yield-curve shader surface, view the GLSL source.",
-          "3D Market: rotate the yield/volatility/stress surfaces built from live Treasury data -- close the loop from graphics theory to the actual application.",
+          "Open 3D Market → 3D Yield Surface. Rotate/zoom; note it reflects the correction just applied.",
+          "Toggle Perspective/Orthographic — the camera projection genuinely switches.",
+          "Open 'Graphics Details' — show the live Model/View/Projection matrices updating as you orbit.",
+          "Switch to 'Risk View' — the same data now renders through the hand-written GLSL shader; adjust the threshold slider live.",
+          "Open 'Explain This Visualization' — walk through the data → geometry → transform → projection → depth → lighting → shader trace.",
+          "Switch to 3D Portfolio Stress Surface — run a scenario shock first, then show the surface reflects it.",
+        ]} />
+      </Panel>
+
+      <Panel title="4. Methodology — the documentation, not the demo (~2 min)">
+        <DemoSteps steps={[
+          "Course Mapping: show the syllabus-grounded table — what's implemented, what's honestly marked not implemented, and why.",
+          "Computer Vision Methodology / Computer Graphics Methodology: the written pipeline docs matching what was just shown live.",
+          "Technical Evidence: point out the supplementary pages (raster algorithms, 2D transforms, CNN vs ViT benchmarks, VR/AR concepts) — syllabus topics with no natural Treasury use, kept as direct evidence rather than forced into the product.",
         ]} />
       </Panel>
 
       <Panel title="Integration Story">
         <p style={{ fontSize: 12, color: "var(--text-mid)" }}>
           Financial chart image → Computer Vision extraction → structured financial value → Treasury analytics
-          (P&L/risk) → 3D visualization. Both academic subjects and the Treasury domain meet in this one pipeline
-          rather than existing as separate, unrelated mini-projects.
+          (P&L/risk) → Computer Graphics visualization. Both academic subjects and the Treasury domain meet in one
+          pipeline, inside one product, rather than existing as separate, unrelated demos.
         </p>
       </Panel>
     </div>

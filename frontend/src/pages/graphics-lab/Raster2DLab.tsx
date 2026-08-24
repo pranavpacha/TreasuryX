@@ -87,7 +87,7 @@ function ColorModelWidget() {
 export default function Raster2DLab() {
   return (
     <div>
-      <Panel title="Raster Graphics Lab — CS4104 Module 1">
+      <Panel title="Raster Graphics — CS4104 Module 1 (Technical Evidence)">
         <p style={{ fontSize: 11, color: "var(--text-mid)" }}>
           Modern GPUs rasterize lines and circles in hardware, so a WebGL scene never runs this code. These are the
           actual pixel-generation algorithms, implemented explicitly in TypeScript and plotted pixel-by-pixel on a

@@ -15,7 +15,11 @@ from app.dependencies import get_provider
 from app.finance.bonds import duration_convexity_dv01
 from app.models.audit_log import AuditLog
 from app.models.cv_extraction import CvExtraction
+from app.models.market_override import MarketOverride
+from app.risk.aggregator import get_bond_positions, get_fx_positions
 from app.schemas.cv import CvCommitRequest, CvCorrectionRequest
+from app.services.market_view import effective_fx_rate
+from app.services.overrides import list_active_overrides, set_override
 
 router = APIRouter(prefix="/api/cv", tags=["cv"])
 
@@ -89,8 +93,14 @@ def correct(req: CvCorrectionRequest, db: Session = Depends(get_db)):
 
 @router.post("/commit")
 def commit(req: CvCommitRequest, db: Session = Depends(get_db), provider: MarketDataProvider = Depends(get_provider)):
-    """Feed a (possibly human-corrected) extracted value into the Treasury analytics
-    engine and return the resulting analytics -- this closes the CV -> Finance loop."""
+    """Feed a (possibly human-corrected) extracted value into the Treasury analytics engine.
+
+    This is a REAL state change, not a one-off calculation: it writes a MarketOverride row
+    (see app/services/overrides.py) that every other part of the app -- Rates & Bonds, Risk,
+    Scenario, and the 3D Portfolio Stress Surface -- reads through
+    app/services/market_view.py. A committed correction is visible everywhere immediately,
+    exactly like a real market-data correction would be.
+    """
     record = db.get(CvExtraction, req.extraction_id)
     if record is None:
         raise HTTPException(404, "Extraction not found")
@@ -102,22 +112,48 @@ def commit(req: CvCommitRequest, db: Session = Depends(get_db), provider: Market
     value = float(match["value"])
 
     if req.target == "fx":
-        current = next((q.rate for q in provider.get_all_fx_latest() if q.pair == req.instrument_id), None)
+        previous = effective_fx_rate(db, provider, req.instrument_id)
+        if previous is None:
+            raise HTTPException(400, f"Unknown FX pair {req.instrument_id}")
+        set_override(db, "FX", req.instrument_id, "rate", value, source="cv_extraction", cv_extraction_id=record.id)
+
+        affected_positions = [
+            {"pair": p.pair, "notional_base": p.notional_base, "pnl_inr": round(p.pnl, 2)}
+            for p in get_fx_positions(db, provider) if p.pair == req.instrument_id
+        ]
         analytics = {
-            "instrument_id": req.instrument_id, "extracted_spot": value, "current_demo_spot": current,
-            "diff_vs_demo": None if current is None else round(value - current, 4),
+            "instrument_id": req.instrument_id, "field": "spot rate",
+            "previous_value": previous, "new_value": value, "delta": round(value - previous, 4),
+            "affected_open_positions": affected_positions,
         }
+
     elif req.target == "bond_yield":
         bond = next((b for b in provider.get_bonds() if b.isin == req.instrument_id), None)
         if bond is None:
             raise HTTPException(400, f"Unknown bond {req.instrument_id}")
         years = max(0.05, (date.fromisoformat(bond.maturity_date) - date.today()).days / 365.25)
-        y = value / 100.0
-        dur = duration_convexity_dv01(bond.face, bond.coupon_rate, y, years, bond.frequency)
+
+        dur_before = duration_convexity_dv01(bond.face, bond.coupon_rate, bond.current_yield / 100.0, years, bond.frequency)
+        dur_after = duration_convexity_dv01(bond.face, bond.coupon_rate, value / 100.0, years, bond.frequency)
+
+        set_override(db, "BOND", req.instrument_id, "yield_pct", value, source="cv_extraction", cv_extraction_id=record.id)
+
+        affected_positions = [
+            {
+                "isin": p.isin, "quantity_face": p.quantity,
+                "market_value_before_inr": None, "market_value_after_inr": round(p.market_value, 2),
+                "dv01_after_inr": round(p.dv01, 2),
+            }
+            for p in get_bond_positions(db, provider) if p.isin == req.instrument_id
+        ]
         analytics = {
-            "instrument_id": req.instrument_id, "extracted_yield_pct": value,
-            "clean_price": round(dur.price, 4), "modified_duration": round(dur.modified_duration, 4),
-            "convexity": round(dur.convexity, 4), "dv01_per_100_face": round(dur.dv01, 6),
+            "instrument_id": req.instrument_id, "field": "yield",
+            "previous_value": bond.current_yield, "new_value": value, "delta_bps": round((value - bond.current_yield) * 100, 1),
+            "clean_price_before": round(dur_before.price, 4), "clean_price_after": round(dur_after.price, 4),
+            "modified_duration_after": round(dur_after.modified_duration, 4),
+            "convexity_after": round(dur_after.convexity, 4),
+            "dv01_per_100_face_after": round(dur_after.dv01, 6),
+            "affected_open_positions": affected_positions,
         }
     else:
         raise HTTPException(400, f"Unsupported commit target {req.target}")
@@ -126,3 +162,21 @@ def commit(req: CvCommitRequest, db: Session = Depends(get_db), provider: Market
     db.add(AuditLog(action="CV_COMMIT", entity_type="cv_extraction", entity_id=str(record.id), detail_json=analytics))
     db.commit()
     return analytics
+
+
+@router.get("/overrides")
+def list_overrides(db: Session = Depends(get_db)):
+    """Every active CV-sourced market correction currently applied on top of demo data."""
+    return [
+        {"instrument_type": o.instrument_type, "instrument_id": o.instrument_id, "field": o.field,
+         "value": o.value, "source": o.source, "applied_at": o.created_at.isoformat()}
+        for o in list_active_overrides(db)
+    ]
+
+
+@router.delete("/overrides")
+def reset_overrides(db: Session = Depends(get_db)):
+    """Clears all CV-sourced market corrections, restoring baseline demo data everywhere."""
+    n = db.query(MarketOverride).delete()
+    db.commit()
+    return {"cleared": n}

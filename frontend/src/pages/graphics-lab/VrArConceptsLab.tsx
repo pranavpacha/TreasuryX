@@ -53,7 +53,7 @@ export default function VrArConceptsLab() {
 
       <Panel title="What IS implemented instead, covering the same underlying graphics concepts">
         <p style={{ fontSize: 11, color: "var(--text-mid)" }}>
-          The 3D Graphics Lab's camera/projection, transformation-matrix, lighting/shading, and depth-buffer
+          The 3D Market page's camera/projection, transformation-matrix, lighting/shading, and depth-buffer
           material covers the same mathematical foundations (view/projection matrices, perspective, illumination
           models) that a VR renderer also relies on -- just delivered through a standard laptop display via WebGL
           rather than a stereo HMD.

@@ -25,7 +25,9 @@ running. Base path for every route below is `/api`.
 | GET | `/scenario/history` | Past scenario runs |
 | POST | `/cv/extract` | Upload an image, run the CV pipeline, return stage images + extracted fields |
 | POST | `/cv/correct` | Save human-corrected field values for an extraction |
-| POST | `/cv/commit` | Feed a (corrected) extracted value into the finance engine, return analytics |
+| POST | `/cv/commit` | Apply a (corrected) extracted value into the Treasury engine — writes a `MarketOverride` (so it's visible everywhere else) and returns before/after price, duration, DV01, and affected open positions |
+| GET | `/cv/overrides` | List every active CV-sourced market correction |
+| DELETE | `/cv/overrides` | Clear all CV-sourced corrections, restoring baseline demo data everywhere |
 | GET | `/market3d/yield-surface?n_dates=` | Yield-curve surface data (tenor × date × yield) |
 | GET | `/market3d/fx-vol-surface` | FX volatility surface data (pair × lookback-window × vol) |
 | GET | `/market3d/stress-surface?fx_steps=&yield_steps=` | Portfolio P&L stress-surface grid (FX shock × yield shock) |

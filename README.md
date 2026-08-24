@@ -4,9 +4,12 @@
 > academic and demonstration purposes only.** TreasuryX is a student-built project and is **not**
 > Bloomberg, Reuters, or any production bank system.
 
-TreasuryX has two modes: **Terminal Mode** (a clean, professional Treasury workstation) and
-**Academic Mode** (adds Computer Vision Lab, Computer Graphics Lab, and course-mapping/methodology
-pages, for coursework demonstration). Toggle it top-right in the app header.
+TreasuryX is organized as **Workstation → Intelligence → Visualization → Methodology** — Computer
+Vision and Computer Graphics are real capabilities used inside the Treasury workflow (Financial
+Image Intelligence, Compare Market Screens, 3D Market), not a separate "labs" section bolted onto
+a dashboard. Methodology is documentation: formulas, pipeline writeups, the syllabus-grounded
+Course Mapping, and Technical Evidence for the handful of syllabus topics with no natural Treasury
+production use.
 
 ## 1. Project Overview
 
@@ -39,27 +42,43 @@ yield-curve, FX-volatility, and stress surfaces in 3D.
 
 ## 4. Features
 
-- **Overview**: portfolio P&L, VaR, DV01, exposures, risk-limit utilization, market regime, market events.
+### Workstation
+- **Overview**: portfolio P&L, VaR, DV01, exposures, risk-limit utilization, market regime, market events, Data Status, and a compact Technology Integration panel.
 - **FX Desk**: live-from-demo quotes, spread/return/volatility, simulated spot trades, MTM P&L.
 - **Rates & Bonds**: G-Sec analytics — clean/dirty price, YTM, Macaulay/Modified duration, convexity, DV01.
 - **Yield Curve**: 1M–30Y tenors, date comparison, curve-shift table, steepening/flattening classification.
-- **Risk**: historical VaR/ES (95%/99%, configurable lookback), drawdown, exposures, limit utilization.
-- **Scenario / Stress Testing**: preset and custom FX/yield shocks, exact repricing, full audit trail (`SCN-xxxxx`).
+- **Portfolio Risk**: historical VaR/ES (95%/99%, configurable lookback), drawdown, exposures, limit utilization.
+- **Stress Testing**: preset and custom FX/yield shocks, exact repricing, full audit trail (`SCN-xxxxx`).
 - **Trade Blotter**: every simulated trade, clearly labeled SIMULATED.
-- **Market Intelligence (CV)**: image upload → preprocessing → edge/region detection → OCR →
-  chart classification → structured extraction → human correction → commit into the finance engine.
+
+### Intelligence (Computer Vision, used as a real product capability)
+- **Financial Image Intelligence**: image upload → preprocessing → edge/region detection → OCR →
+  chart classification → structured extraction → human review (with a "How Detected?" trace per
+  field) → **Apply to Treasury**, which writes a real state change (a `MarketOverride`) that bond
+  pricing, risk, scenarios, and the 3D views all read through immediately — not a one-off
+  calculation shown once and discarded.
+- **Compare Market Screens**: upload two Treasury screenshots; SIFT keypoint matching finds shared
+  and changed regions — genuinely useful for spotting a changed number on an otherwise identical
+  report layout.
+
+### Visualization (Computer Graphics, used as a real rendering pipeline)
 - **3D Market**: yield-curve surface, FX volatility surface, portfolio stress (P&L) surface — real
-  Three.js geometry driven entirely by finance-engine output.
-- **Computer Vision Lab** (Academic Mode): filter comparison, adjustable edge detection
-  (Sobel/Laplacian/DoG/LoG/Canny), Harris corner + blob detection, SIFT keypoint matching, GrabCut
-  segmentation with real IoU/Dice metrics, dense optical flow, and a from-scratch CNN vs. Vision
-  Transformer comparison with real accuracy/precision/recall/F1/confusion-matrix results.
-- **Computer Graphics Lab** (Academic Mode): DDA/Bresenham/Midpoint-Circle raster algorithms,
-  homogeneous-coordinate 2D transforms with live matrices, Cohen-Sutherland & Liang-Barsky line
-  clipping, live Model/View/Projection matrices, perspective-vs-orthographic comparison, a
-  from-scratch software Z-buffer, and a hand-written GLSL shader driving real yield-curve data.
-- **Course Mapping**: an in-app page cross-referencing every implemented (and explicitly
-  not-implemented) topic against the actual CS4231/CS4104 course syllabi.
+  Three.js/WebGL geometry driven entirely by live finance-engine output. Every surface has a
+  **Market View / Risk View** toggle (Risk View swaps in a hand-written GLSL shader), a
+  **Perspective / Orthographic** projection toggle, a **Graphics Details** panel showing the live
+  Model/View/Projection matrices read straight from the renderer, and an **Explain This
+  Visualization** trace of the full data → geometry → transform → projection → depth → lighting →
+  shader pipeline.
+
+### Methodology (documentation, not a fourth product surface)
+- **Treasury / Computer Vision / Computer Graphics Methodology**: the formulas and pipelines
+  actually implemented, matching the running code.
+- **Course Mapping**: cross-references every topic in the real CS4231/CS4104 syllabi against
+  actual code — implemented, partial, or honestly marked not implemented, with reasons.
+- **Technical Evidence**: supplementary pages for syllabus topics with no natural Treasury use
+  (raster line-drawing algorithms, 2D transform/clipping math, VR/AR concepts) plus the CNN-vs-ViT
+  benchmark and the honestly-labeled object-detection status — kept here rather than forced into
+  the main workflow.
 
 ## 5. Architecture
 
@@ -113,29 +132,32 @@ detector was deliberately not used here (see [docs/cv_pipeline.md](docs/cv_pipel
 degrades gracefully if Tesseract isn't installed; every other stage still runs and is shown in the
 UI. Extracted values are manually correctable before being committed into the finance engine.
 
-Academic Mode adds a full **Computer Vision Lab** covering the rest of the CS4231 syllabus: filter
-comparison, adjustable edge detection, corner/blob detection, SIFT matching, GrabCut segmentation
-(with real IoU/Dice benchmarks), optical flow, and a CNN vs. Vision Transformer comparison — both
-models written and trained **from scratch** on a small synthetic dataset, with real (not
-fabricated) metrics. See [docs/cv_models.md](docs/cv_models.md). Deep object detection (Fast
-R-CNN/YOLO) is honestly marked `NOT_TRAINED` with the reason and a reproducible pipeline spec,
-rather than faked — see the Object Detection lab.
+Two more Computer Vision capabilities are real product features, reached from **Intelligence** in
+the nav rather than a separate lab: **Compare Market Screens** (SIFT keypoint matching between two
+uploaded screenshots) and, kept as supplementary **Technical Evidence** rather than production
+features because they're evaluation exercises: filter comparison, adjustable edge detection,
+corner/blob detection, GrabCut segmentation (with real IoU/Dice benchmarks), optical flow, and a
+CNN vs. Vision Transformer comparison — both models written and trained **from scratch** on a
+small synthetic dataset, with real (not fabricated) metrics. See
+[docs/cv_models.md](docs/cv_models.md). Deep object detection (Fast R-CNN/YOLO) is honestly marked
+`NOT_TRAINED` with the reason and a reproducible pipeline spec, rather than faked — see
+Methodology → Technical Evidence → Object Detection Status.
 
 ## 8. Computer Graphics (summary)
 
-The integrated 3D Market views are real Three.js/WebGL scenes (via `@react-three/fiber`), not a
-canned 3D-chart library: custom `BufferGeometry` grid meshes built directly from finance-engine
-data, vertex-colored, lit by ambient + two directional lights, perspective camera with
-`OrbitControls`, and raycast-driven hover tooltips.
+The production **3D Market** page renders real Three.js/WebGL scenes (via `@react-three/fiber`),
+not a canned 3D-chart library: custom `BufferGeometry` grid meshes built directly from
+finance-engine data, vertex-colored, lit by ambient + two directional lights, a switchable
+perspective/orthographic camera with `OrbitControls`, raycast-driven hover tooltips, live
+Model/View/Projection matrices read directly from the renderer ("Graphics Details"), and a
+**Market View / Risk View** toggle where Risk View swaps in a hand-written GLSL vertex+fragment
+shader (`frontend/src/three/SurfacePlot.tsx`) driving the same real yield/volatility/stress data.
 
-Academic Mode adds a full **Computer Graphics Lab** covering the CS4104 syllabus's lower-level
-algorithms explicitly: DDA/Bresenham/Midpoint-Circle rasterization (pixel-by-pixel, not
-canvas-native), homogeneous-coordinate 2D transforms with live matrices, Cohen-Sutherland &
-Liang-Barsky line clipping, live Model/View/Projection matrices read directly from Three.js,
-perspective-vs-orthographic comparison, ambient/diffuse/specular lighting, a from-scratch software
-Z-buffer, and a hand-written GLSL vertex+fragment shader (`ShaderYieldSurface.tsx`) driving real
-yield-curve data. VR/AR/XR syllabus topics are documented conceptually only — no VR hardware is
-used, per the project's laptop-only design. See
+A handful of CS4104 topics with no natural Treasury production use — DDA/Bresenham/Midpoint-Circle
+rasterization (pixel-by-pixel, not canvas-native), homogeneous-coordinate 2D transforms with live
+matrices, Cohen-Sutherland & Liang-Barsky line clipping — are kept as supplementary **Technical
+Evidence** rather than forced into the product. VR/AR/XR syllabus topics are documented
+conceptually only — no VR hardware is used, per the project's laptop-only design. See
 [docs/graphics_pipeline.md](docs/graphics_pipeline.md).
 
 ## 9. Data Sources
@@ -213,15 +235,18 @@ Not included in this repository snapshot — run the app locally (Section 12) an
 
 ## 15. Testing
 
-- **Backend**: `cd backend && .venv\Scripts\python -m pytest tests/ -v` — 92 tests covering finance
+- **Backend**: `cd backend && .venv\Scripts\python -m pytest tests/ -v` — 97 tests covering finance
   formulas (FX, bonds, YTM, duration/convexity/DV01, VaR/ES, scenario engine), the CV pipeline
-  (synthetic clean/noisy/low-resolution/low-contrast images), the Academic Mode CV labs
-  (filters, edges, SIFT, segmentation, corners/blobs, optical flow), and the API (valid/invalid
-  inputs, error responses, end-to-end flows). All 92 pass as of this build.
-- **Frontend**: `cd frontend && npm run test` — Vitest + React Testing Library, 49 tests covering
-  formatting utilities, page rendering, the scenario-submission flow, the CV upload workflow, and
-  the graphics-lab algorithms (raster line/circle drawing, 2D transform matrices, line clipping,
-  color-model conversions). All 49 pass as of this build.
+  (synthetic clean/noisy/low-resolution/low-contrast images), the classical CV techniques
+  (filters, edges, SIFT, segmentation, corners/blobs, optical flow), the API (valid/invalid
+  inputs, error responses, end-to-end flows), and the **CV → Treasury → Risk → 3D integration**
+  (committing a corrected value propagates to bonds/positions/risk/stress-surface, and resets
+  cleanly). All 97 pass as of this build.
+- **Frontend**: `cd frontend && npm run test` — Vitest + React Testing Library, 52 tests covering
+  formatting utilities, page rendering, the scenario-submission flow, the Financial Image
+  Intelligence apply-to-Treasury flow (including that a manual correction is persisted before
+  committing), and the graphics algorithms (raster line/circle drawing, 2D transform matrices,
+  line clipping, color-model conversions). All 52 pass as of this build.
 - See [docs/testing.md](docs/testing.md) for what is and isn't covered.
 
 ## 16. Limitations
@@ -258,7 +283,7 @@ See [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md) — grounded directly in the two 
 syllabi (**CS4231 Fundamentals of Computer Vision** and **CS4104 Computer Graphics and Virtual
 Reality**, both RV University), with every topic marked Implemented / Partial / Not Implemented
 against real code, and reasons given for anything out of scope. Also rendered live in-app at
-**Academic Mode → Course Mapping**.
+**Methodology → Course Mapping**.
 
 ---
 

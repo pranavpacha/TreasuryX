@@ -1,7 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { api } from "../services/api";
 import Overview from "./Overview";
+
+function renderPage() {
+  return render(<MemoryRouter><Overview /></MemoryRouter>);
+}
 
 const mockOverview = {
   as_of: "2026-08-21",
@@ -17,13 +22,14 @@ const mockOverview = {
   },
   market_events: [{ headline: "Test event", category: "FX", severity: "INFO", created_at: "2026-08-21T00:00:00Z" }],
   is_demo: true,
+  data_status: { mode: "DEMO", last_updated: "2026-08-21", source: "DemoDataProvider (synthetic, offline)", active_cv_corrections: [] },
   disclaimer: "Educational/simulated Treasury analytics platform. No real-money trading.",
 };
 
 describe("Overview page", () => {
   it("renders the disclaimer, FX snapshot and risk metrics after loading", async () => {
     vi.spyOn(api, "get").mockResolvedValueOnce({ data: mockOverview });
-    render(<Overview />);
+    renderPage();
 
     expect(screen.getByText(/Loading Treasury overview/i)).toBeInTheDocument();
 
@@ -35,7 +41,7 @@ describe("Overview page", () => {
 
   it("shows an error state when the API call fails", async () => {
     vi.spyOn(api, "get").mockRejectedValueOnce(new Error("Network error"));
-    render(<Overview />);
+    renderPage();
     await waitFor(() => expect(screen.getByText(/Error: Network error/i)).toBeInTheDocument());
   });
 });

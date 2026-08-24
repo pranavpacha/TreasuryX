@@ -2,11 +2,9 @@ import { OrbitControls, OrthographicCamera, PerspectiveCamera } from "@react-thr
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import * as THREE from "three";
+import { Link } from "react-router-dom";
 import { Panel } from "../../components/Common";
-import { useApi } from "../../hooks/useApi";
-import { fetchYieldCurve } from "../../services/api";
 import { MatrixReadout } from "../../three/MatrixReadout";
-import { ShaderYieldSurface } from "../../three/ShaderYieldSurface";
 
 function TransformedBox({
   pos, rot, scale, onMatrices,
@@ -166,41 +164,18 @@ function LightingSection() {
   );
 }
 
-function CustomShaderSection() {
-  const curve = useApi(() => fetchYieldCurve());
-  const [threshold, setThreshold] = useState(0.5);
-
+function ShaderPointerSection() {
   return (
-    <Panel title="Custom GLSL Shader on Real Yield Curve Data">
-      <p style={{ fontSize: 11, color: "var(--text-mid)", marginBottom: 8 }}>
-        A hand-written vertex + fragment shader (not a built-in material) drives this surface. The vertex shader
-        passes each point's normalized height to the fragment shader; the fragment shader colors each pixel by
-        comparing that height against the interactive risk-threshold uniform below, blended with simple directional
-        lighting computed from the surface normal.
+    <Panel title="Custom GLSL Shader — Now in Production">
+      <p style={{ fontSize: 11, color: "var(--text-mid)" }}>
+        The hand-written vertex + fragment shader that used to live only in this lab now powers the
+        actual <strong>Risk View</strong> on the production 3D Market page (shared implementation in
+        <code> frontend/src/three/SurfacePlot.tsx</code> — <code>RISK_VERTEX_SHADER</code> /
+        <code> RISK_FRAGMENT_SHADER</code>), applied to real yield-curve, FX-volatility, and
+        portfolio-stress data. See <Link to="/visualization/3d-market">3D Market</Link> and toggle
+        Market View / Risk View there, with "Graphics Details" open to see the live uniforms.
+        This keeps one implementation instead of a separate demo copy.
       </p>
-      <div className="field" style={{ maxWidth: 300, marginBottom: 8 }}>
-        <label>Risk threshold uniform (uThreshold): {threshold.toFixed(2)}</label>
-        <input type="range" min={0} max={1} step={0.01} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} />
-      </div>
-      {curve.data && (
-        <ShaderYieldSurface yields={curve.data.map((p) => p.yield_pct)} riskThreshold={threshold} />
-      )}
-      <details style={{ marginTop: 10 }}>
-        <summary style={{ cursor: "pointer", fontSize: 11, color: "var(--text-mid)" }}>View shader source (GLSL)</summary>
-        <pre className="mono" style={{ fontSize: 10, background: "var(--bg-2)", padding: 10, borderRadius: 4, overflowX: "auto" }}>
-{`// Fragment shader excerpt
-uniform float uThreshold;
-varying float vHeight;
-varying vec3 vNormal;
-void main() {
-  float t = clamp(vHeight / uMaxHeight, 0.0, 1.0);
-  float band = smoothstep(uThreshold - 0.05, uThreshold + 0.05, t);
-  vec3 baseColor = mix(uLowColor, uHighColor, band);
-  float diffuse = max(dot(normalize(vNormal), normalize(uLightDir)), 0.0);
-  gl_FragColor = vec4(baseColor * (0.4 + 0.6 * diffuse), 1.0);
-}`}
-        </pre>
-      </details>
     </Panel>
   );
 }
@@ -211,7 +186,7 @@ export default function Graphics3DLab() {
       <TransformMatrixSection />
       <ProjectionCompareSection />
       <LightingSection />
-      <CustomShaderSection />
+      <ShaderPointerSection />
     </div>
   );
 }

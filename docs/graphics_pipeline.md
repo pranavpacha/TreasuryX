@@ -2,13 +2,16 @@
 
 Two layers of graphics work exist in this project:
 
-1. **The integrated 3D Market visualization** (`frontend/src/three/SurfacePlot.tsx`), used by the
-   three 3D views on the "3D Market" page (yield-curve surface, FX volatility surface, portfolio
-   stress surface) — always driven by real Treasury-engine data.
-2. **The Academic Mode Graphics Lab** (`frontend/src/pages/graphics-lab/`, `frontend/src/graphics/`),
-   which implements the CS4104 syllabus's lower-level algorithms explicitly (raster line/circle
-   drawing, homogeneous-coordinate 2D transforms, line clipping, a from-scratch software Z-buffer,
-   and a hand-written GLSL shader) — see [ACADEMIC_MAPPING.md](../ACADEMIC_MAPPING.md) for the
+1. **3D Market** (`frontend/src/pages/Market3D.tsx`, rendered via `frontend/src/three/SurfacePlot.tsx`)
+   — the production page: yield-curve surface, FX volatility surface, portfolio stress surface, all
+   driven by real Treasury-engine data, with a Market View/Risk View toggle, a
+   Perspective/Orthographic projection toggle, live Model/View/Projection matrices, and a
+   hand-written GLSL shader. This is the actual Computer Graphics implementation, not a demo of it.
+2. **Technical Evidence** (`frontend/src/pages/graphics-lab/`, `frontend/src/graphics/`) — a handful
+   of CS4104 topics with no natural Treasury production use (raster line/circle drawing,
+   homogeneous-coordinate 2D transforms, line clipping, a from-scratch software Z-buffer, and a
+   generic transform/camera/lighting demonstration), kept as direct, inspectable syllabus evidence
+   rather than forced into the product — see [ACADEMIC_MAPPING.md](../ACADEMIC_MAPPING.md) for the
    full syllabus cross-reference.
 
 This document covers (1); see below for a summary of (2).
@@ -54,10 +57,11 @@ stated explicitly rather than left as an unstated default.
 
 ## Shaders
 
-`SurfacePlot.tsx` itself uses built-in materials (`MeshStandardMaterial`, `LineBasicMaterial`,
-`MeshBasicMaterial`) — sufficient for the integrated 3D Market views. A genuine **custom GLSL
-shader** (hand-written vertex + fragment shader via `THREE.ShaderMaterial`) was written separately
-for the Academic Mode Graphics Lab — see below.
+`SurfacePlot.tsx` uses built-in materials (`MeshStandardMaterial`, `LineBasicMaterial`,
+`MeshBasicMaterial`) for "Market View". For "Risk View", the same component switches to a genuine
+**custom GLSL shader** (hand-written vertex + fragment shader, `RISK_VERTEX_SHADER` /
+`RISK_FRAGMENT_SHADER`, via `THREE.ShaderMaterial`) — one implementation, used in production by
+every 3D Market surface, not a separate demo copy.
 
 ## VR
 
@@ -68,7 +72,7 @@ syllabus's VR/AR/XR modules (4-5) are documented conceptually only, at
 
 ---
 
-## Academic Mode Graphics Lab (CS4104 low-level algorithms)
+## Technical Evidence (CS4104 low-level algorithms with no natural Treasury use)
 
 Unlike the WebGL-based 3D Market views above, these implement the syllabus's foundational
 algorithms explicitly, in code the browser's GPU/canvas API does NOT normally expose:
@@ -97,11 +101,8 @@ algorithms explicitly, in code the browser's GPU/canvas API does NOT normally ex
   `Float32Array` depth buffer and a `Uint8ClampedArray` color buffer, rasterizing two overlapping
   rectangles so the nearer one correctly wins regardless of draw order; and (b) a WebGL
   `depthTest` on/off toggle on two overlapping 3D planes, showing what breaks without it.
-- **Custom GLSL shader** (`frontend/src/three/ShaderYieldSurface.tsx`) — a hand-written vertex
-  shader (passes normalized height + transformed normal to the fragment stage) and fragment shader
-  (blends two colors based on an interactive `uThreshold` uniform, then applies a simple
-  Blinn-Phong-family diffuse term from a rotating light direction) via `THREE.ShaderMaterial`,
-  driving a surface built from **real yield-curve data** fetched from the Treasury API. The GLSL
-  source is viewable in the UI.
 - **RGB/CMY/HSV color models** (`frontend/src/graphics/colorModels.ts`) — bidirectional conversions
   with a live round-trip check, per the syllabus's Module 1 color-models topic.
+
+(The custom GLSL shader itself is **not** duplicated here — see the "Shaders" section above; it
+runs in production inside `SurfacePlot.tsx`'s "Risk View", not as a separate evidence page.)

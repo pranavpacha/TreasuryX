@@ -11,7 +11,7 @@ export default function CvFiltersLab() {
   return (
     <div>
       <SingleUploadLab<LabImageResult>
-        title="Filter Comparison Lab"
+        title="Filter Comparison — Technical Evidence"
         description="CS4231 Module 1: Spatial Domain Processing & Spatial Filtering. Compares Gaussian, median, bilateral, and CLAHE filtering on the same image so their trade-offs (noise removal vs. edge preservation vs. contrast) are visible side by side."
         run={(file) => runFiltersLab(file, kernel, sigma)}
         controls={(rerun) => (

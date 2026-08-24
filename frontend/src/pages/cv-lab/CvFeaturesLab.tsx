@@ -6,7 +6,7 @@ import type { LabImageResult } from "../../services/academicCvApi";
 export default function CvFeaturesLab() {
   return (
     <SingleUploadLab<LabImageResult>
-      title="Corner & Blob Detection Lab"
+      title="Corner & Blob Detection — Technical Evidence"
       description="CS4231 Module 2: 'Blobs, Corner Detection; Scale Space and Scale Selection.' Harris corner detection locates axis/gridline intersections; blob detection locates marker/legend-swatch-like regions on a financial chart."
       run={runFeaturesLab}
     >

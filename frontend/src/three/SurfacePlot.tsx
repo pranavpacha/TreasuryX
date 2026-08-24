@@ -1,18 +1,27 @@
-import { Html, OrbitControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
+import { Html, OrbitControls, OrthographicCamera, PerspectiveCamera } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 /**
- * Generic 3D surface plot built from real BufferGeometry (not a canned chart
- * library) so the transformation / lighting / camera pipeline is genuine and
- * inspectable. See GraphicsInfoPanel for the documented pipeline.
+ * Production 3D surface renderer for the Treasury visualizations (yield curve, FX volatility,
+ * portfolio stress). Built from real BufferGeometry (not a canned chart library), so the
+ * transformation / camera / projection / depth / lighting / shader pipeline is genuine and
+ * inspectable -- this component IS the Computer Graphics implementation, not a separate demo of
+ * it. See GraphicsDetailsPanel (rendered by the pages that use this) for the live introspection
+ * UI, and docs/graphics_pipeline.md for the full writeup.
  *
  * Coordinate mapping (object space, right-handed, Y-up as in Three.js):
  *   world X <- column index (xLabels)     scaled to [-halfWidth, halfWidth]
  *   world Y <- normalized data value      scaled to [0, heightScale]  (the "height")
  *   world Z <- row index (yLabels)        scaled to [-halfDepth, halfDepth]
  */
+
+export interface GraphicsMatrices {
+  model: THREE.Matrix4;
+  view: THREE.Matrix4;
+  projection: THREE.Matrix4;
+}
 
 export interface SurfacePlotProps {
   xLabels: string[]; // columns
@@ -24,6 +33,17 @@ export interface SurfacePlotProps {
   zAxisName: string; // depth axis (rows)
   colorMode?: "sequential" | "diverging"; // diverging centers at 0 (red/green P&L style)
   heightScale?: number;
+  /** "material" = standard PBR-lite material (default). "shader" = the hand-written GLSL
+   * risk shader, blending color by height vs. shaderThreshold -- this is the same production
+   * code path used for every surface's "Risk View", not a separate demo shader. */
+  renderMode?: "material" | "shader";
+  shaderThreshold?: number;
+  projectionMode?: "perspective" | "orthographic";
+  fov?: number;
+  depthTest?: boolean;
+  ambientIntensity?: number;
+  directionalIntensity?: number;
+  onMatrices?: (m: GraphicsMatrices) => void;
 }
 
 function colorFor(norm: number, mode: "sequential" | "diverging"): THREE.Color {
@@ -90,13 +110,83 @@ function buildGeometry(values: number[][], colorMode: "sequential" | "diverging"
   return { geometry, positions, min, max, width, depth };
 }
 
-function Surface({ values, colorMode, heightScale }: { values: number[][]; colorMode: "sequential" | "diverging"; heightScale: number }) {
-  const { geometry } = useMemo(() => buildGeometry(values, colorMode, heightScale), [values, colorMode, heightScale]);
+const RISK_VERTEX_SHADER = `
+varying float vHeight;
+varying vec3 vNormal;
+void main() {
+  vHeight = position.y;
+  vNormal = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const RISK_FRAGMENT_SHADER = `
+uniform float uThreshold;
+uniform float uMaxHeight;
+uniform vec3 uLowColor;
+uniform vec3 uHighColor;
+uniform vec3 uLightDir;
+varying float vHeight;
+varying vec3 vNormal;
+
+void main() {
+  float t = clamp(vHeight / max(uMaxHeight, 0.0001), 0.0, 1.0);
+  float band = smoothstep(uThreshold - 0.05, uThreshold + 0.05, t);
+  vec3 baseColor = mix(uLowColor, uHighColor, band);
+  float diffuse = max(dot(normalize(vNormal), normalize(uLightDir)), 0.0);
+  gl_FragColor = vec4(baseColor * (0.4 + 0.6 * diffuse), 1.0);
+}
+`;
+
+export { RISK_FRAGMENT_SHADER, RISK_VERTEX_SHADER };
+
+function Surface({
+  values, colorMode, heightScale, renderMode, shaderThreshold, depthTest, onMatrices,
+}: {
+  values: number[][]; colorMode: "sequential" | "diverging"; heightScale: number;
+  renderMode: "material" | "shader"; shaderThreshold: number; depthTest: boolean;
+  onMatrices?: (m: GraphicsMatrices) => void;
+}) {
+  const { geometry, max: maxHeight } = useMemo(() => {
+    const built = buildGeometry(values, colorMode, heightScale);
+    return { ...built, max: heightScale }; // height is normalized into [0, heightScale] by construction
+  }, [values, colorMode, heightScale]);
   const wireframe = useMemo(() => new THREE.WireframeGeometry(geometry), [geometry]);
+
+  const uniforms = useMemo(() => ({
+    uThreshold: { value: shaderThreshold },
+    uMaxHeight: { value: maxHeight },
+    uLowColor: { value: new THREE.Color("#3b82f6") },
+    uHighColor: { value: new THREE.Color("#e5484d") },
+    uLightDir: { value: new THREE.Vector3(2, 3, 2) },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [maxHeight]);
+  uniforms.uThreshold.value = shaderThreshold;
+
+  const { camera } = useThree();
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    uniforms.uLightDir.value.set(Math.sin(t * 0.25) * 2, 3, Math.cos(t * 0.25) * 2);
+    if (onMatrices && meshRef.current) {
+      meshRef.current.updateMatrixWorld();
+      camera.updateMatrixWorld();
+      onMatrices({
+        model: meshRef.current.matrixWorld.clone(),
+        view: camera.matrixWorldInverse.clone(),
+        projection: (camera as THREE.PerspectiveCamera).projectionMatrix.clone(),
+      });
+    }
+  });
+
   return (
     <group>
-      <mesh geometry={geometry}>
-        <meshStandardMaterial vertexColors flatShading side={THREE.DoubleSide} roughness={0.6} metalness={0.05} />
+      <mesh geometry={geometry} ref={meshRef}>
+        {renderMode === "shader" ? (
+          <shaderMaterial vertexShader={RISK_VERTEX_SHADER} fragmentShader={RISK_FRAGMENT_SHADER} uniforms={uniforms} side={THREE.DoubleSide} depthTest={depthTest} />
+        ) : (
+          <meshStandardMaterial vertexColors flatShading side={THREE.DoubleSide} roughness={0.6} metalness={0.05} depthTest={depthTest} />
+        )}
       </mesh>
       <lineSegments geometry={wireframe}>
         <lineBasicMaterial color="#0a0d12" transparent opacity={0.35} />
@@ -160,7 +250,9 @@ function HoverMarkers({
 
 export function SurfacePlot({
   xLabels, yLabels, values, formatValue = (v) => v.toFixed(2), xAxisName, yAxisName, zAxisName,
-  colorMode = "sequential", heightScale = 3.5,
+  colorMode = "sequential", heightScale = 3.5, renderMode = "material", shaderThreshold = 0.5,
+  projectionMode = "perspective", fov = 45, depthTest = true,
+  ambientIntensity = 0.55, directionalIntensity = 1.1, onMatrices,
 }: SurfacePlotProps) {
   if (values.length === 0 || values[0].length === 0) {
     return <div className="empty-state">No data to visualize.</div>;
@@ -168,11 +260,16 @@ export function SurfacePlot({
   return (
     <div>
       <div style={{ height: 380, background: "#05070a", borderRadius: 4, border: "1px solid var(--border)" }}>
-        <Canvas camera={{ position: [9, 7, 9], fov: 45, near: 0.1, far: 100 }}>
-          <ambientLight intensity={0.55} />
-          <directionalLight position={[6, 10, 4]} intensity={1.1} />
+        <Canvas>
+          {projectionMode === "perspective" ? (
+            <PerspectiveCamera makeDefault position={[9, 7, 9]} fov={fov} near={0.1} far={100} />
+          ) : (
+            <OrthographicCamera makeDefault position={[9, 7, 9]} zoom={45} near={0.1} far={100} />
+          )}
+          <ambientLight intensity={ambientIntensity} />
+          <directionalLight position={[6, 10, 4]} intensity={directionalIntensity} />
           <directionalLight position={[-6, 4, -4]} intensity={0.3} />
-          <Surface values={values} colorMode={colorMode} heightScale={heightScale} />
+          <Surface values={values} colorMode={colorMode} heightScale={heightScale} renderMode={renderMode} shaderThreshold={shaderThreshold} depthTest={depthTest} onMatrices={onMatrices} />
           <HoverMarkers values={values} xLabels={xLabels} yLabels={yLabels} formatValue={formatValue} heightScale={heightScale} />
           <axesHelper args={[6]} />
           <OrbitControls enablePan enableZoom enableRotate makeDefault />

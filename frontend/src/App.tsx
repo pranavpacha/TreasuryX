@@ -1,75 +1,81 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
-import { ModeProvider } from "./context/ModeContext";
 import Blotter from "./pages/Blotter";
-import CourseMapping from "./pages/CourseMapping";
 import CvEdgesLab from "./pages/cv-lab/CvEdgesLab";
 import CvFeaturesLab from "./pages/cv-lab/CvFeaturesLab";
 import CvFiltersLab from "./pages/cv-lab/CvFiltersLab";
-import CvLabHome from "./pages/cv-lab/CvLabHome";
 import CvModelBenchmarks from "./pages/cv-lab/CvModelBenchmarks";
 import CvObjectDetectionLab from "./pages/cv-lab/CvObjectDetectionLab";
 import CvOpticalFlowLab from "./pages/cv-lab/CvOpticalFlowLab";
 import CvSegmentationLab from "./pages/cv-lab/CvSegmentationLab";
-import CvSiftLab from "./pages/cv-lab/CvSiftLab";
-import DemoGuide from "./pages/DemoGuide";
+import FxDesk from "./pages/FxDesk";
 import DepthBufferLab from "./pages/graphics-lab/DepthBufferLab";
 import Graphics3DLab from "./pages/graphics-lab/Graphics3DLab";
-import GraphicsLabHome from "./pages/graphics-lab/GraphicsLabHome";
 import Raster2DLab from "./pages/graphics-lab/Raster2DLab";
 import Transform2DLab from "./pages/graphics-lab/Transform2DLab";
 import VrArConceptsLab from "./pages/graphics-lab/VrArConceptsLab";
-import FxDesk from "./pages/FxDesk";
-import LimitationsFutureWork from "./pages/LimitationsFutureWork";
+import CompareMarketScreens from "./pages/intelligence/CompareMarketScreens";
 import Market3D from "./pages/Market3D";
 import MarketIntelligence from "./pages/MarketIntelligence";
-import Methodology from "./pages/Methodology";
+import ComputerGraphicsMethodology from "./pages/methodology/ComputerGraphicsMethodology";
+import ComputerVisionMethodology from "./pages/methodology/ComputerVisionMethodology";
+import CourseMapping from "./pages/methodology/CourseMapping";
+import TechnicalEvidence from "./pages/methodology/TechnicalEvidence";
+import TreasuryMethodology from "./pages/methodology/TreasuryMethodology";
 import Overview from "./pages/Overview";
 import RatesBonds from "./pages/RatesBonds";
 import Risk from "./pages/Risk";
 import Scenario from "./pages/Scenario";
 import YieldCurve from "./pages/YieldCurve";
+import DemoGuide from "./pages/DemoGuide";
+import LimitationsFutureWork from "./pages/LimitationsFutureWork";
 
 export default function App() {
   return (
-    <ModeProvider>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/fx" element={<FxDesk />} />
-            <Route path="/rates" element={<RatesBonds />} />
-            <Route path="/yield-curve" element={<YieldCurve />} />
-            <Route path="/risk" element={<Risk />} />
-            <Route path="/scenario" element={<Scenario />} />
-            <Route path="/blotter" element={<Blotter />} />
-            <Route path="/vision" element={<MarketIntelligence />} />
-            <Route path="/3d" element={<Market3D />} />
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          {/* WORKSTATION */}
+          <Route path="/" element={<Overview />} />
+          <Route path="/fx" element={<FxDesk />} />
+          <Route path="/rates" element={<RatesBonds />} />
+          <Route path="/yield-curve" element={<YieldCurve />} />
+          <Route path="/risk" element={<Risk />} />
+          <Route path="/scenario" element={<Scenario />} />
+          <Route path="/blotter" element={<Blotter />} />
 
-            <Route path="/academic/cv" element={<CvLabHome />} />
-            <Route path="/academic/cv/filters" element={<CvFiltersLab />} />
-            <Route path="/academic/cv/edges" element={<CvEdgesLab />} />
-            <Route path="/academic/cv/features" element={<CvFeaturesLab />} />
-            <Route path="/academic/cv/sift" element={<CvSiftLab />} />
-            <Route path="/academic/cv/segmentation" element={<CvSegmentationLab />} />
-            <Route path="/academic/cv/optical-flow" element={<CvOpticalFlowLab />} />
-            <Route path="/academic/cv/models" element={<CvModelBenchmarks />} />
-            <Route path="/academic/cv/object-detection" element={<CvObjectDetectionLab />} />
+          {/* INTELLIGENCE */}
+          <Route path="/intelligence/financial-image" element={<MarketIntelligence />} />
+          <Route path="/intelligence/compare-screens" element={<CompareMarketScreens />} />
 
-            <Route path="/academic/graphics" element={<GraphicsLabHome />} />
-            <Route path="/academic/graphics/raster" element={<Raster2DLab />} />
-            <Route path="/academic/graphics/transform2d" element={<Transform2DLab />} />
-            <Route path="/academic/graphics/3d" element={<Graphics3DLab />} />
-            <Route path="/academic/graphics/depth" element={<DepthBufferLab />} />
-            <Route path="/academic/graphics/vr-ar" element={<VrArConceptsLab />} />
+          {/* VISUALIZATION */}
+          <Route path="/visualization/3d-market" element={<Market3D />} />
 
-            <Route path="/academic/course-mapping" element={<CourseMapping />} />
-            <Route path="/academic/methodology" element={<Methodology />} />
-            <Route path="/academic/limitations" element={<LimitationsFutureWork />} />
-            <Route path="/academic/demo-guide" element={<DemoGuide />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </ModeProvider>
+          {/* METHODOLOGY (documentation) */}
+          <Route path="/methodology/treasury" element={<TreasuryMethodology />} />
+          <Route path="/methodology/computer-vision" element={<ComputerVisionMethodology />} />
+          <Route path="/methodology/computer-graphics" element={<ComputerGraphicsMethodology />} />
+          <Route path="/methodology/course-mapping" element={<CourseMapping />} />
+          <Route path="/methodology/technical-evidence" element={<TechnicalEvidence />} />
+          <Route path="/methodology/limitations" element={<LimitationsFutureWork />} />
+          <Route path="/methodology/demo-guide" element={<DemoGuide />} />
+
+          {/* Supplementary technical evidence -- syllabus topics with no natural Treasury
+              production use, kept as direct evidence rather than forced into the main workflow */}
+          <Route path="/evidence/cv/filters" element={<CvFiltersLab />} />
+          <Route path="/evidence/cv/edges" element={<CvEdgesLab />} />
+          <Route path="/evidence/cv/features" element={<CvFeaturesLab />} />
+          <Route path="/evidence/cv/segmentation" element={<CvSegmentationLab />} />
+          <Route path="/evidence/cv/optical-flow" element={<CvOpticalFlowLab />} />
+          <Route path="/evidence/cv/models" element={<CvModelBenchmarks />} />
+          <Route path="/evidence/cv/object-detection" element={<CvObjectDetectionLab />} />
+          <Route path="/evidence/graphics/raster" element={<Raster2DLab />} />
+          <Route path="/evidence/graphics/transform2d" element={<Transform2DLab />} />
+          <Route path="/evidence/graphics/concepts" element={<Graphics3DLab />} />
+          <Route path="/evidence/graphics/depth-buffer" element={<DepthBufferLab />} />
+          <Route path="/evidence/graphics/vr-ar" element={<VrArConceptsLab />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   );
 }

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Badge, ErrorState, LoadingState, Metric, Panel, fmtInr, toneFor } from "../components/Common";
 import { useApi } from "../hooks/useApi";
 import { fetchOverview } from "../services/api";
@@ -49,10 +50,13 @@ export default function Overview() {
       <div className="grid grid-2">
         <Panel title="FX Snapshot (DEMO)">
           <table className="data-table">
-            <thead><tr><th>Pair</th><th>Rate</th></tr></thead>
+            <thead><tr><th>Pair</th><th>Rate</th><th></th></tr></thead>
             <tbody>
               {data.fx_snapshot.map((q) => (
-                <tr key={q.pair}><td>{q.pair}</td><td>{q.rate.toFixed(4)}</td></tr>
+                <tr key={q.pair}>
+                  <td>{q.pair}</td><td>{q.rate.toFixed(4)}</td>
+                  <td>{q.is_cv_corrected && <Badge kind="warn">CV-corrected</Badge>}</td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -85,6 +89,35 @@ export default function Overview() {
               <span style={{ fontSize: 12 }}>{e.headline}</span>
             </div>
           ))}
+        </Panel>
+      </div>
+
+      <div className="grid grid-2">
+        <Panel title="Data Status">
+          <table className="data-table">
+            <tbody>
+              <tr><td style={{ textAlign: "left" }}>Mode</td><td><Badge kind="warn">{data.data_status.mode}</Badge></td></tr>
+              <tr><td style={{ textAlign: "left" }}>Last updated</td><td>{data.data_status.last_updated}</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Source</td><td style={{ textAlign: "left" }}>{data.data_status.source}</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Active CV corrections</td><td>{data.data_status.active_cv_corrections.length}</td></tr>
+            </tbody>
+          </table>
+          {data.data_status.active_cv_corrections.length > 0 && (
+            <div style={{ fontSize: 10.5, color: "var(--text-mid)", marginTop: 6 }}>
+              {data.data_status.active_cv_corrections.map((o, i) => (
+                <div key={i}>{o.instrument_type} {o.instrument_id} {o.field} → {o.value} (applied {new Date(o.applied_at).toLocaleTimeString()})</div>
+              ))}
+            </div>
+          )}
+        </Panel>
+        <Panel title="Technology Integration">
+          <table className="data-table">
+            <tbody>
+              <tr><td style={{ textAlign: "left", width: 100 }}>FOCV</td><td style={{ textAlign: "left" }}>Financial image understanding — <Link to="/intelligence/financial-image">Financial Image Intelligence</Link></td></tr>
+              <tr><td style={{ textAlign: "left" }}>Treasury Engine</td><td style={{ textAlign: "left" }}>FX / Rates / Risk / Scenario analytics, powering every page</td></tr>
+              <tr><td style={{ textAlign: "left" }}>CGVR</td><td style={{ textAlign: "left" }}>Interactive 3D financial rendering — <Link to="/visualization/3d-market">3D Market</Link></td></tr>
+            </tbody>
+          </table>
         </Panel>
       </div>
     </div>

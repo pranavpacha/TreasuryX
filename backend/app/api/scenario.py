@@ -12,6 +12,7 @@ from app.finance.scenario_engine import BondPositionInput, FxPositionInput, Shoc
 from app.models.position import Position
 from app.models.scenario import ScenarioRun
 from app.schemas.scenario import ScenarioRequest, ScenarioResponse
+from app.services.market_view import effective_bonds, effective_fx_quotes
 
 router = APIRouter(prefix="/api/scenario", tags=["scenario"])
 
@@ -20,8 +21,8 @@ router = APIRouter(prefix="/api/scenario", tags=["scenario"])
 def run_scenario_endpoint(
     req: ScenarioRequest, db: Session = Depends(get_db), provider: MarketDataProvider = Depends(get_provider),
 ):
-    latest_fx = {q.pair: q.rate for q in provider.get_all_fx_latest()}
-    bonds_by_isin = {b.isin: b for b in provider.get_bonds()}
+    latest_fx = {q.pair: q.rate for q in effective_fx_quotes(db, provider)}
+    bonds_by_isin = {b.isin: b for b in effective_bonds(db, provider)}
 
     fx_inputs = []
     for pos in db.query(Position).filter(Position.instrument_type == "FX", Position.status == "OPEN").all():

@@ -2,7 +2,7 @@
 
 ## Backend — `cd backend && .venv\Scripts\python -m pytest tests/ -v`
 
-92 tests, all passing as of this build:
+97 tests, all passing as of this build:
 
 - **`test_fx.py`** (10 tests) — FX P&L long/short profit/loss, invalid-rate handling, log/simple
   return correctness against manually-computed values, volatility zero-variance and scaling checks.
@@ -36,6 +36,13 @@
   segmentation IoU/Dice are exactly 1.0 for identical masks and 0.0 for disjoint masks, and the
   synthetic-ground-truth benchmark produces a valid [0,1] IoU/Dice; optical flow reports near-zero
   magnitude for identical frames and positive magnitude for a known translation.
+- **`test_integration_cv_to_treasury.py`** (5 tests) — the core CV → Treasury integration: a
+  committed bond-yield correction propagates to `/api/bonds` (price/duration change,
+  `is_cv_corrected` flag), to open bond positions and portfolio risk (DV01), and to the 3D
+  Portfolio Stress Surface (a non-zero-shock grid point changes because the underlying base yield
+  changed — the always-zero zero-shock point is explicitly excluded as a non-discriminating check);
+  a committed FX correction propagates to `/api/fx/quotes` and open FX positions; and
+  `DELETE /api/cv/overrides` cleanly restores baseline demo data everywhere.
 
 Uses an isolated SQLite file per test (`tests/conftest.py`, FastAPI `dependency_overrides`) — tests
 never touch the developer's working `treasuryx.db`. The CNN/ViT training script
@@ -45,7 +52,7 @@ suite, since it requires the dev-only `torch` dependency and takes tens of secon
 
 ## Frontend — `cd frontend && npm run test`
 
-49 tests, all passing as of this build:
+52 tests, all passing as of this build:
 
 - **`Common.test.tsx`** (9 tests) — `fmtNumber`/`fmtInr` formatting (crore/lakh/plain/negative) and
   `toneFor` sign classification.
@@ -54,8 +61,12 @@ suite, since it requires the dev-only `torch` dependency and takes tens of secon
 - **`Scenario.test.tsx`** (2 tests) — clicking a preset shock posts the correct payload and renders
   the audited `SCN-xxxxx` result with its method notes; a custom-shock form submission posts the
   user-entered values.
-- **`MarketIntelligence.test.tsx`** (2 tests) — uploading a file renders the pipeline-stage images and
-  extracted field inputs; a low-confidence warning from the API is surfaced in the UI.
+- **`MarketIntelligence.test.tsx`** (5 tests) — extracted fields render with pipeline stages hidden
+  behind "Processing Details" by default; the low-confidence warning banner surfaces; clicking
+  "Show" reveals the stage images; **editing a value and clicking "Apply to Treasury" calls
+  `/cv/correct` with the edited value BEFORE calling `/cv/commit`** (a regression test for a real
+  bug caught during development — the correction was previously never persisted before commit) and
+  renders the "Portfolio updated" confirmation; "How Detected?" reveals the technical trace.
 - **`rasterAlgorithms.test.ts`** (8 tests) — DDA/Bresenham produce correct horizontal, diagonal, and
   steep-line pixel sequences with no gaps; Bresenham matches DDA on a horizontal line; Midpoint
   Circle points all fall within tolerance of the true radius and are symmetric across all 4 quadrants.
@@ -72,10 +83,14 @@ suite, since it requires the dev-only `torch` dependency and takes tens of secon
 ## What is *not* covered
 
 - No end-to-end (Playwright/Cypress) browser test suite — verification of full page rendering
-  (all 30+ routes, including every Academic Mode lab, the 3D canvases, and the custom shader) was
-  done manually via an automated browser tool during development (console-error-free, correct data
-  loaded per network inspection, matrix/algorithm output spot-checked by hand) rather than committed
-  as an automated E2E suite, due to time constraints on this build.
+  (all 25+ routes, including the 3D Market page's Market View/Risk View toggle and every
+  Methodology/Technical Evidence page) was done manually via an automated browser tool during
+  development (console-error-free, correct data loaded per network inspection, matrix/algorithm
+  output spot-checked by hand) rather than committed as an automated E2E suite, due to time
+  constraints on this build. Note: the 3D canvases' actual pixel dimensions could not be visually
+  screenshotted in that tool's headless testing pane (its own tooling reports frames aren't
+  compositing when the pane isn't displayed) — rendering was confirmed error-free and
+  data-correct, but a full visual pixel check is worth doing once in a normal browser.
 - CV OCR accuracy is not benchmarked against a labeled dataset — the test suite verifies the pipeline
   *runs correctly and degrades gracefully* under varied image conditions, not OCR text accuracy,
   which depends on the (optional, separately-installed) Tesseract binary.

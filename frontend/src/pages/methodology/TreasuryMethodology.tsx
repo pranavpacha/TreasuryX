@@ -1,4 +1,4 @@
-import { Panel } from "../components/Common";
+import { Panel } from "../../components/Common";
 
 const FORMULAS = [
   {
@@ -39,13 +39,14 @@ const FORMULAS = [
   },
 ];
 
-export default function Methodology() {
+export default function TreasuryMethodology() {
   return (
     <div>
-      <Panel title="Financial Calculation Methodology">
+      <Panel title="Treasury Methodology">
         <p style={{ fontSize: 12, color: "var(--text-mid)" }}>
           The formula shown for each metric matches the actual implementation in <code>backend/app/finance/</code> —
           see <code>docs/finance_methodology.md</code> for the full derivation and every simplification made.
+          These are the same formulas computing the numbers shown live throughout the workstation.
         </p>
       </Panel>
       {FORMULAS.map((f) => (

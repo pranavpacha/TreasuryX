@@ -19,6 +19,7 @@ from app.finance.bonds import bond_price, duration_convexity_dv01
 from app.finance.fx import fx_pnl, simple_returns
 from app.models.bond import Bond
 from app.models.position import Position
+from app.services.market_view import effective_bonds, effective_fx_quotes
 
 
 @dataclass
@@ -48,7 +49,7 @@ class BondPositionView:
 
 
 def get_fx_positions(db: Session, provider: MarketDataProvider) -> list[FxPositionView]:
-    latest = {q.pair: q.rate for q in provider.get_all_fx_latest()}
+    latest = {q.pair: q.rate for q in effective_fx_quotes(db, provider)}
     views = []
     for pos in db.query(Position).filter(Position.instrument_type == "FX", Position.status == "OPEN").all():
         current_rate = latest.get(pos.instrument_id)
@@ -63,7 +64,7 @@ def get_fx_positions(db: Session, provider: MarketDataProvider) -> list[FxPositi
 
 
 def get_bond_positions(db: Session, provider: MarketDataProvider) -> list[BondPositionView]:
-    bonds_by_isin = {b.isin: b for b in provider.get_bonds()}
+    bonds_by_isin = {b.isin: b for b in effective_bonds(db, provider)}
     views = []
     for pos in db.query(Position).filter(Position.instrument_type == "BOND", Position.status == "OPEN").all():
         b = bonds_by_isin.get(pos.instrument_id)
