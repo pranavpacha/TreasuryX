@@ -29,6 +29,15 @@ running. Base path for every route below is `/api`.
 | GET | `/market3d/yield-surface?n_dates=` | Yield-curve surface data (tenor × date × yield) |
 | GET | `/market3d/fx-vol-surface` | FX volatility surface data (pair × lookback-window × vol) |
 | GET | `/market3d/stress-surface?fx_steps=&yield_steps=` | Portfolio P&L stress-surface grid (FX shock × yield shock) |
+| POST | `/academic/cv/filters` | Gaussian/median/bilateral/CLAHE filter comparison on an uploaded image |
+| POST | `/academic/cv/edges` | Sobel/Laplacian/DoG/LoG/adjustable-Canny edge detection |
+| POST | `/academic/cv/features` | Harris corner detection + blob detection |
+| POST | `/academic/cv/sift` | SIFT keypoint detection + ratio-test matching between two images |
+| POST | `/academic/cv/segmentation` | GrabCut segmentation on an uploaded image |
+| GET | `/academic/cv/segmentation/benchmark` | Real IoU/Dice on a synthetic ground-truth dataset |
+| POST | `/academic/cv/optical-flow` | Dense Farneback optical flow between two frames (or one + a synthetic shift) |
+| GET | `/academic/cv/model-benchmarks` | Precomputed CNN vs. ViT training results (accuracy, confusion matrix, training curves, sample predictions) |
+| GET | `/academic/cv/object-detection/status` | Honest `NOT_TRAINED` status + reproducible pipeline spec for deep object detection |
 
 ## Error handling conventions
 

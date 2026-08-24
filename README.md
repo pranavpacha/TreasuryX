@@ -1,8 +1,12 @@
-# TreasuryX — AI-Assisted Treasury Market Intelligence & Trading Terminal
+# TreasuryX — AI-Assisted Treasury Market Intelligence, Risk Analytics and Interactive Financial Visualization Terminal
 
 > **Educational/simulated Treasury analytics platform. No real-money trading. Outputs are for
 > academic and demonstration purposes only.** TreasuryX is a student-built project and is **not**
 > Bloomberg, Reuters, or any production bank system.
+
+TreasuryX has two modes: **Terminal Mode** (a clean, professional Treasury workstation) and
+**Academic Mode** (adds Computer Vision Lab, Computer Graphics Lab, and course-mapping/methodology
+pages, for coursework demonstration). Toggle it top-right in the app header.
 
 ## 1. Project Overview
 
@@ -46,6 +50,16 @@ yield-curve, FX-volatility, and stress surfaces in 3D.
   chart classification → structured extraction → human correction → commit into the finance engine.
 - **3D Market**: yield-curve surface, FX volatility surface, portfolio stress (P&L) surface — real
   Three.js geometry driven entirely by finance-engine output.
+- **Computer Vision Lab** (Academic Mode): filter comparison, adjustable edge detection
+  (Sobel/Laplacian/DoG/LoG/Canny), Harris corner + blob detection, SIFT keypoint matching, GrabCut
+  segmentation with real IoU/Dice metrics, dense optical flow, and a from-scratch CNN vs. Vision
+  Transformer comparison with real accuracy/precision/recall/F1/confusion-matrix results.
+- **Computer Graphics Lab** (Academic Mode): DDA/Bresenham/Midpoint-Circle raster algorithms,
+  homogeneous-coordinate 2D transforms with live matrices, Cohen-Sutherland & Liang-Barsky line
+  clipping, live Model/View/Projection matrices, perspective-vs-orthographic comparison, a
+  from-scratch software Z-buffer, and a hand-written GLSL shader driving real yield-curve data.
+- **Course Mapping**: an in-app page cross-referencing every implemented (and explicitly
+  not-implemented) topic against the actual CS4231/CS4104 course syllabi.
 
 ## 5. Architecture
 
@@ -90,23 +104,39 @@ for full detail, including every simplification made and why. Highlights:
 - **Market regime**: a documented **rule-based** classifier (not a trained model) — explicitly
   labeled a decision-support signal, not a prediction.
 
-## 7. Computer Vision Pipeline (summary)
+## 7. Computer Vision (summary)
 
-Classical OpenCV pipeline (resize → grayscale → denoise → CLAHE normalize → adaptive threshold →
-Canny edges → Hough lines / contour region detection) feeding Tesseract OCR, then regex-based
-financial field extraction (instrument / number / date matching) and a chart-type classifier.
-A pretrained deep detector (YOLO/ViT) was deliberately **not** used — see
-[docs/cv_pipeline.md](docs/cv_pipeline.md) for the reasoning. OCR degrades gracefully (with a clear
-warning) if the Tesseract binary isn't installed; every other pipeline stage still runs and is shown
-in the UI. Extracted values can be manually corrected before being committed into the finance engine.
+The applied Treasury pipeline is classical OpenCV (resize → grayscale → denoise → CLAHE normalize
+→ adaptive threshold → Canny edges → Hough lines / contour region detection) feeding Tesseract
+OCR, then regex-based financial field extraction and a chart-type classifier — a pretrained deep
+detector was deliberately not used here (see [docs/cv_pipeline.md](docs/cv_pipeline.md)). OCR
+degrades gracefully if Tesseract isn't installed; every other stage still runs and is shown in the
+UI. Extracted values are manually correctable before being committed into the finance engine.
 
-## 8. 3D Graphics Pipeline (summary)
+Academic Mode adds a full **Computer Vision Lab** covering the rest of the CS4231 syllabus: filter
+comparison, adjustable edge detection, corner/blob detection, SIFT matching, GrabCut segmentation
+(with real IoU/Dice benchmarks), optical flow, and a CNN vs. Vision Transformer comparison — both
+models written and trained **from scratch** on a small synthetic dataset, with real (not
+fabricated) metrics. See [docs/cv_models.md](docs/cv_models.md). Deep object detection (Fast
+R-CNN/YOLO) is honestly marked `NOT_TRAINED` with the reason and a reproducible pipeline spec,
+rather than faked — see the Object Detection lab.
 
-Real Three.js/WebGL scenes (via `@react-three/fiber`), not a canned 3D-chart library: custom
-`BufferGeometry` grid meshes built directly from finance-engine data, vertex-colored, lit by
-ambient + two directional lights, perspective camera with `OrbitControls` for rotate/zoom/pan, and
-raycast-driven hover tooltips. See [docs/graphics_pipeline.md](docs/graphics_pipeline.md) and the
-in-app "Graphics Info" panel on the 3D Market page.
+## 8. Computer Graphics (summary)
+
+The integrated 3D Market views are real Three.js/WebGL scenes (via `@react-three/fiber`), not a
+canned 3D-chart library: custom `BufferGeometry` grid meshes built directly from finance-engine
+data, vertex-colored, lit by ambient + two directional lights, perspective camera with
+`OrbitControls`, and raycast-driven hover tooltips.
+
+Academic Mode adds a full **Computer Graphics Lab** covering the CS4104 syllabus's lower-level
+algorithms explicitly: DDA/Bresenham/Midpoint-Circle rasterization (pixel-by-pixel, not
+canvas-native), homogeneous-coordinate 2D transforms with live matrices, Cohen-Sutherland &
+Liang-Barsky line clipping, live Model/View/Projection matrices read directly from Three.js,
+perspective-vs-orthographic comparison, ambient/diffuse/specular lighting, a from-scratch software
+Z-buffer, and a hand-written GLSL vertex+fragment shader (`ShaderYieldSurface.tsx`) driving real
+yield-curve data. VR/AR/XR syllabus topics are documented conceptually only — no VR hardware is
+used, per the project's laptop-only design. See
+[docs/graphics_pipeline.md](docs/graphics_pipeline.md).
 
 ## 9. Data Sources
 
@@ -138,6 +168,9 @@ See [docs/api.md](docs/api.md) for a written summary of every endpoint.
 - (Optional, for OCR) [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) — on Windows,
   `winget install --id UB-Mannheim.TesseractOCR`. Without it, the CV pipeline still runs every other
   stage and shows a clear warning instead of OCR text.
+- (Optional, only to *regenerate* the CNN/ViT model-benchmark results) `torch` — see
+  [docs/cv_models.md](docs/cv_models.md). Not required to run the app; precomputed results are
+  already committed at `backend/app/data/model_results/cnn_vs_vit.json`.
 
 ### Backend
 ```bash
@@ -180,13 +213,15 @@ Not included in this repository snapshot — run the app locally (Section 12) an
 
 ## 15. Testing
 
-- **Backend**: `cd backend && .venv\Scripts\python -m pytest tests/ -v` — 74 tests covering finance
+- **Backend**: `cd backend && .venv\Scripts\python -m pytest tests/ -v` — 92 tests covering finance
   formulas (FX, bonds, YTM, duration/convexity/DV01, VaR/ES, scenario engine), the CV pipeline
-  (synthetic clean / noisy / low-resolution / low-contrast images), and the API (valid/invalid
-  inputs, error responses, end-to-end flows). All 74 pass as of this build.
-- **Frontend**: `cd frontend && npm run test` — Vitest + React Testing Library, 15 tests covering
-  formatting utilities, page rendering (Overview), the scenario-submission flow, and the CV upload
-  workflow. All 15 pass as of this build.
+  (synthetic clean/noisy/low-resolution/low-contrast images), the Academic Mode CV labs
+  (filters, edges, SIFT, segmentation, corners/blobs, optical flow), and the API (valid/invalid
+  inputs, error responses, end-to-end flows). All 92 pass as of this build.
+- **Frontend**: `cd frontend && npm run test` — Vitest + React Testing Library, 49 tests covering
+  formatting utilities, page rendering, the scenario-submission flow, the CV upload workflow, and
+  the graphics-lab algorithms (raster line/circle drawing, 2D transform matrices, line clipping,
+  color-model conversions). All 49 pass as of this build.
 - See [docs/testing.md](docs/testing.md) for what is and isn't covered.
 
 ## 16. Limitations
@@ -201,20 +236,29 @@ Not included in this repository snapshot — run the app locally (Section 12) an
 - OCR requires the Tesseract binary to be installed separately; without it, the rest of the CV
   pipeline (preprocessing, edges, region detection, chart classification) still runs.
 - No authentication/authorization layer — this is a single-user local demo, not a multi-tenant system.
+- CNN/ViT are trained on a small synthetic dataset; deep object detectors (Fast R-CNN/YOLO) and
+  a trained segmentation network (U-Net) are explicitly not trained — see
+  [docs/cv_models.md](docs/cv_models.md) and [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md).
+- No VR/AR hardware is used anywhere; the syllabus's VR/AR/XR modules are documented conceptually
+  only. No Unity integration (separate desktop engine, outside this web app's stack).
+- See [docs/assumptions.md](docs/assumptions.md) for the complete list.
 
 ## 17. Future Work
 
 - Wire a real (delayed) market-data provider behind the existing `MarketDataProvider` interface.
 - Portfolio-level (covariance-aware) VaR instead of a single reconstructed-value historical series.
-- A trained chart-type / region classifier to complement the current rule-based + classical-CV pipeline.
+- A labeled financial-chart dataset large enough to justify training a real object detector or
+  segmentation network, to replace the current classical-CV / synthetic-data approach.
 - WebSocket-based live quote streaming into the FX Desk.
+- See [docs/assumptions.md](docs/assumptions.md) for the complete list.
 
 ## 18. Academic Mapping
 
-See [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md). **No course syllabus documents were supplied in
-this build session** — the mapping uses standard/common terminology for Computer Vision and
-Computer Graphics & Visualization courses and is explicitly flagged as such; verify it against your
-actual syllabi before submitting.
+See [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md) — grounded directly in the two uploaded course
+syllabi (**CS4231 Fundamentals of Computer Vision** and **CS4104 Computer Graphics and Virtual
+Reality**, both RV University), with every topic marked Implemented / Partial / Not Implemented
+against real code, and reasons given for anything out of scope. Also rendered live in-app at
+**Academic Mode → Course Mapping**.
 
 ---
 

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import bonds, cv, fx, market3d, overview, positions, risk, scenario, yield_curve
+from app.api import academic_cv, bonds, cv, fx, market3d, overview, positions, risk, scenario, yield_curve
 from app.config import settings
 from app.database import SessionLocal, init_db
 from app.seed import seed_all
@@ -49,6 +49,7 @@ app.include_router(risk.router)
 app.include_router(scenario.router)
 app.include_router(cv.router)
 app.include_router(market3d.router)
+app.include_router(academic_cv.router)
 
 
 @app.get("/api/health")

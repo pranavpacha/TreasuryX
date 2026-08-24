@@ -14,8 +14,11 @@ legends, numeric callouts, gridlines) rather than natural-scene objects. A class
   an auditable Treasury tool more than raw black-box accuracy.
 
 This mirrors the project spec's own guidance: *"If a simpler CV method works better, prefer it."*
-A pretrained detector or Vision Transformer was therefore **deliberately not used** — this is stated
-explicitly rather than added just to claim coverage.
+A **pretrained** deep detector was therefore deliberately not used for this pipeline specifically.
+(A Vision Transformer *was* later written from scratch and trained for the separate CNN-vs-ViT
+comparison task in Academic Mode — see [cv_models.md](cv_models.md) — but that's a controlled
+classification experiment on a small synthetic dataset, not a replacement for this pipeline's
+region/OCR extraction, which remains classical CV for the reasons above.)
 
 ## Stages (`backend/app/cv_engine/`)
 
@@ -57,3 +60,15 @@ and asserts: preprocessing produces all expected stages, edge/line/region detect
 error, chart classification is correct on keyword-bearing text, the end-to-end pipeline never
 crashes on any of the four conditions, and corrupt input raises a clear `ValueError` rather than
 crashing silently.
+
+## Academic Mode CV Lab (deeper syllabus coverage)
+
+This pipeline is the *applied* Treasury use case. A separate set of labs under Academic Mode →
+Computer Vision Lab implements the rest of the CS4231 syllabus explicitly and interactively:
+filter comparison, adjustable edge detection (Sobel/Laplacian/DoG/LoG/Canny), Harris corner +
+blob detection, SIFT keypoint matching, GrabCut segmentation with real IoU/Dice metrics, dense
+optical flow, and a from-scratch CNN vs. Vision Transformer comparison (see
+[cv_models.md](cv_models.md)) — backed by
+`backend/app/cv_engine/{filters_lab,edges_lab,features_lab,sift_lab,segmentation_lab,optical_flow_lab}.py`
+and `backend/app/api/academic_cv.py`. See [ACADEMIC_MAPPING.md](../ACADEMIC_MAPPING.md) for the
+full syllabus-to-code cross-reference, including what's explicitly out of scope and why.

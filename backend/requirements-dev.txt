@@ -1,0 +1,14 @@
+# Dev-only extras NOT installed in the production Docker image (backend/requirements.txt),
+# to keep the deployed image small and within free-tier hosting limits.
+#
+# torch is used ONLY by backend/app/cv_engine/models/train.py to generate the synthetic
+# financial-chart dataset and train the CNN / ViT-lite classifiers once during development.
+# The resulting metrics/confusion-matrices/sample-predictions are saved as static JSON
+# (backend/app/data/model_results/) and served by the API without needing torch at runtime.
+# If torch happens to be installed in a given environment, the API will also offer live
+# inference on a freshly uploaded image; otherwise it serves the precomputed results and
+# says so explicitly.
+#
+# Install with: pip install -r requirements-dev.txt --extra-index-url https://download.pytorch.org/whl/cpu
+-r requirements.txt
+torch

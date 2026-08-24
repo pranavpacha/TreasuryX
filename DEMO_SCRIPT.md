@@ -1,64 +1,77 @@
-# TreasuryX Demo Script (~8–12 minutes)
+# TreasuryX Demo Script
 
-**Before you start:** run the backend (`uvicorn app.main:app --reload --port 8000`) and frontend
-(`npm run dev`), open `http://localhost:5173`. Everything works offline; the amber
-**DEMO / SIMULATED DATA** badge in the header should be visible throughout.
+Three focused walkthroughs (~5-7 minutes each), designed to stand alone for a Treasury-focused,
+Computer-Vision-focused, or Computer-Graphics-focused audience. All three can also be run
+back-to-back (~18-20 min) to tell the full integration story. Toggle **Academic Mode** (top-right
+of the header) to reveal the CV Lab / Graphics Lab / Academic & Documentation nav sections used
+in Demos 2 and 3.
 
-## 1. Overview (1 min)
-Open **Overview**. Point out: the disclaimer bar, Total P&L / VaR / DV01 / Market Regime metric
-cards (each with a unit and method label, not a bare number), the FX and yield-curve snapshots, risk
-limit utilization, and the market-intelligence event feed.
+## Demo 1 — Treasury Workflow (~5-7 min)
 
-## 2. FX Desk (1.5 min)
-Open **FX Desk**. Show the quote table (rate/bid/ask/spread/1D return/annualized vol with a
-tooltip explaining the volatility methodology). Click a pair to load its 180-day chart. Book a
-**simulated** trade (note the SIMULATED badge and disclaimer) and show the new/updated row in "Open
-FX Positions & MTM P&L" with entry rate, current rate, and P&L.
+1. **Overview** — point out the Total P&L / VaR / DV01 / Market Regime cards (each with unit +
+   method label, never a bare number), FX/curve snapshot, and market-intelligence event feed.
+2. **FX Desk** — book a simulated USD/INR trade (note the SIMULATED badge); show the updated
+   row in Open FX Positions with entry rate, current rate, and P&L.
+3. **Rates & Bonds** — select a G-Sec; show clean price, modified duration, convexity, DV01 with
+   their tooltips (bump-and-reprice methodology).
+4. **Yield Curve** — compare two dates ~20 business days apart; show the curve-shift table and the
+   steepening/flattening classification rule.
+5. **Portfolio Risk** — toggle 95%→99% VaR confidence, note it increases; point out the
+   "no look-ahead bias" note.
+6. **Stress Testing** — run "Combined stress: USD/INR +2%, 2Y +10bp, 10Y +50bp"; walk through the
+   **Methodology / Audit Trail** section (`SCN-00xxx` id, exact-vs-duration-approx note,
+   deterministic-no-AI note, raw inputs JSON).
+7. **Trade Blotter** — show every simulated trade booked so far.
 
-## 3. Rates & Bonds (1.5 min)
-Open **Rates & Bonds**. Show the G-Sec table: coupon, maturity, yield, clean price, modified
-duration, convexity, DV01 (each with a tooltip explaining the bump-and-reprice method). Click a bond
-to load its yield/price history and book a simulated bond trade.
+## Demo 2 — Computer Vision (~5-7 min)
 
-## 4. Yield Curve (1 min)
-Open **Yield Curve**. Pick two dates ~20 business days apart, show the two-curve overlay chart, the
-per-tenor shift table (bps), and the STEEPENING/FLATTENING/STABLE classification with its rule
-explained inline.
+Grounds every step in **CS4231 Fundamentals of Computer Vision**'s actual module/lab structure.
 
-## 5. Risk (1.5 min)
-Open **Risk**. Explain historical VaR/ES (95%/99%, selectable lookback, "no look-ahead" note),
-max drawdown, exposures, and risk-limit utilization. Toggle confidence to 99% and note VaR increases.
+1. **Market Intelligence** — upload a chart screenshot; walk through all 7 pipeline stages
+   (original → grayscale → denoised → CLAHE-normalized → thresholded → Canny edges → detected
+   region), then the OCR text and structured field table; manually correct a value and
+   **Commit → Engine**.
+2. **Academic Mode → CV Lab home** — show the full lab list, each tagged to a specific
+   module/lab requirement.
+3. **Filters lab** — compare Gaussian/median/bilateral/CLAHE side by side.
+4. **Edges lab** — adjust the Canny low/high sliders live; compare DoG vs LoG vs Sobel/Laplacian.
+5. **SIFT lab** — upload two related images; show keypoint counts and Lowe's-ratio-test matches.
+6. **Segmentation lab** — show the real IoU/Dice benchmark computed on synthetic ground truth
+   (mean IoU ≈0.96 as of this build), then try GrabCut on your own image.
+7. **CNN vs ViT (Model Benchmarks)** — walk through both models' accuracy/precision/recall/F1,
+   confusion matrices, training curves, and sample predictions — both trained from scratch on the
+   *same* synthetic dataset for a fair comparison.
+8. **Object Detection lab** — show the honest `NOT_TRAINED` status and the documented reason
+   (Fast R-CNN/YOLO need GPU-scale training + a large labeled dataset, out of scope for a laptop
+   build) plus the reproducible pipeline spec.
 
-## 6. Scenario / Stress Testing (2 min)
-Open **Scenario / Stress**. Run the "10Y +25bp (parallel)" preset — note the instant P&L
-recompute. Then run "Combined stress: USD/INR +2%, 2Y +10bp, 10Y +50bp" and walk through the
-**Methodology / Audit Trail** section (`SCN-00xxx` id, exact-reprice note, deterministic-no-AI note,
-raw inputs JSON) — this is the auditability story (spec section 29).
+## Demo 3 — Computer Graphics (~5-7 min)
 
-## 7. Trade Blotter (0.5 min)
-Open **Trade Blotter** — show every simulated trade booked so far, all marked SIMULATED.
+Grounds every step in **CS4104 Computer Graphics and Virtual Reality**'s actual module/lab
+structure.
 
-## 8. Market Intelligence / Computer Vision (2.5 min)
-Open **Market Intelligence (CV)**. Upload a screenshot of a chart (e.g. a screenshot of the FX Desk
-or Yield Curve page from this same app, or any FX/yield chart image). Walk through:
-- the 7-stage pipeline strip (original → grayscale → denoised → CLAHE-normalized → thresholded →
-  Canny edges → detected region/lines) — **this is the actual CV work**, not a black box;
-- the raw OCR text panel (note the graceful-degradation warning if Tesseract isn't installed);
-- the extracted fields table with per-field confidence badges;
-- **manually correct a value** in the input box;
-- click **Commit → Engine** and show the returned analytics (bond duration/DV01 or FX spot
-  comparison) — this closes the CV → structured value → Treasury analytics loop (spec section 41).
+1. **Raster Graphics lab** — step through DDA and Bresenham pixel-by-pixel on the 32x32 grid,
+   then the Midpoint Circle algorithm; show the RGB/CMY/HSV round-trip widget.
+2. **2D Transform & Clip lab** — compose translate/rotate/scale/shear, read the live homogeneous
+   3x3 matrix; run Cohen-Sutherland and Liang-Barsky clipping on the same line and compare their
+   step-by-step logs.
+3. **3D Transform & Shader lab** — rotate/scale a 3D box, read the live Model/View/Projection
+   matrices (computed by Three.js, not simulated); compare perspective vs orthographic side by
+   side; adjust ambient/directional lighting intensity.
+4. **Custom shader section** (same page) — adjust the risk-threshold uniform on the real
+   yield-curve-driven GLSL shader surface; expand "View shader source" to show the actual GLSL.
+5. **Depth Buffer lab** — show the from-scratch software Z-buffer result (correct occlusion by
+   depth, not draw order), then toggle WebGL depth-test on/off on two overlapping planes.
+6. **3D Market** (outside Academic Mode) — rotate the yield/volatility/stress surfaces built from
+   live Treasury data — closes the loop from graphics theory to the actual application.
 
-## 9. 3D Market (2 min)
-Open **3D Market**. Show all three tabs:
-- **Yield Curve Surface** — rotate/zoom, hover a point to show its tenor/date/yield tooltip;
-- **FX Volatility Surface** — note the diverging window-length axis;
-- **Portfolio Stress Surface** — a diverging red/green surface driven directly by the scenario
-  engine over a grid of FX × yield shocks (built from your booked positions).
-Scroll down to the **Graphics Info** panel and briefly name the projection, camera model, lighting
-model, and coordinate system — this demonstrates the graphics pipeline is understood, not copy-pasted.
+## Integration Story (close every demo with this)
 
-## 10. Wrap-up (0.5 min)
-Summarize the integration story: **financial chart image → Computer Vision extraction → structured
-financial value → Treasury analytics (P&L/risk) → 3D visualization**, and name both academic
-subjects covered (see [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md)).
+```
+financial chart image → Computer Vision extraction → structured financial value
+   → Treasury analytics (P&L / risk) → 3D visualization
+```
+
+Both academic subjects and the Treasury domain meet in this one pipeline rather than existing as
+three unrelated mini-projects. See **Academic Mode → Course Mapping** for the full syllabus
+cross-reference, and [ACADEMIC_MAPPING.md](ACADEMIC_MAPPING.md) for the written version.
