@@ -35,3 +35,11 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: https://treasuryx-backend.onrender.com/api
+    routes:
+      # Client-side routing (React Router) -- without this, a direct navigation or
+      # page refresh on any route other than "/" 404s, since the static file server
+      # has no file at e.g. /methodology/course-mapping. Fall back to index.html for
+      # every path and let the SPA router resolve it.
+      - type: rewrite
+        source: /*
+        destination: /index.html
