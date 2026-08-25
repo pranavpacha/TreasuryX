@@ -38,22 +38,25 @@ table is also rendered live in-app at **Methodology → Course Mapping**
 | Spatial domain processing & filtering, Lab 1 (M1) | Implemented | Financial Image Intelligence (CLAHE/denoise in production) + Filter Comparison evidence (`/evidence/cv/filters`) |
 | Edge detection — DoG, LoG, Canny, Lab 2 (M2) | Implemented | Financial Image Intelligence (Canny in production) + Edge Detection evidence (`/evidence/cv/edges`) |
 | Edge linking via Hough Transform (M2) | Implemented | Financial Image Intelligence — production region-detection stage |
-| Segmentation — thresholding, morphological processing (M2) | Implemented | Financial Image Intelligence (production) + Segmentation evidence (`/evidence/cv/segmentation`) |
+| Segmentation — thresholding, morphological processing (M2) | Implemented | Financial Image Intelligence (production: adaptive thresholding + contour-based region detection) + Segmentation evidence (`/evidence/cv/segmentation`: classical GrabCut, real IoU/Dice benchmarks) |
 | Blobs, corner detection (M2) | Implemented | Corner & Blob Detection evidence (`/evidence/cv/features`) |
 | Scale space, SIFT, Lab 3 (M2) | Implemented | **Compare Market Screens** (`/intelligence/compare-screens`) — a real product feature |
 | Optical flow (M2) | Implemented | Optical Flow evidence (`/evidence/cv/optical-flow`) |
-| CNN review, CNNs for recognition (M3) | Implemented | CNN vs. ViT evidence (`/evidence/cv/models`) — trained from scratch, real metrics; kept as an evaluation exercise since it's trained on synthetic data only (see Computer Vision Methodology for why it doesn't drive production routing) |
+| CNN review, CNNs for recognition (M3) | Implemented | Financial Image Intelligence (`/intelligence/financial-image`, Model Details panel — live per-upload) + CNN vs. ViT evidence (`/evidence/cv/models`) — trained from scratch, real metrics; runs live whenever torch is available (production build omits torch as a dependency, degrades gracefully — see Computer Vision Methodology); does not drive the production chart-type classifier, which is keyword-based |
 | Neural style transfer (M3) | Not implemented | Lecture topic, no corresponding lab |
 | CNNs for object detection — R-CNN, Fast R-CNN, FPN, RetinaNet, Lab 4 (M3) | Not implemented | Requires PASCAL-VOC-scale labeled data + GPU training — Object Detection Status page (`/evidence/cv/object-detection`) documents why + a reproducible pipeline |
-| CNNs for segmentation — FCN, U-Net, Mask-RCNN, Lab 5 (M3) | Partial | Classical (GrabCut) segmentation implemented for the in-scope chart-isolation task; U-Net on a medical-imaging dataset is out of scope (wrong domain) |
+| CNNs for segmentation — FCN, U-Net, Mask-RCNN, Lab 5 (M3) | Partial | Classical GrabCut segmentation implemented and benchmarked (real IoU/Dice) at `/evidence/cv/segmentation` for the in-scope chart-isolation task; U-Net on a medical-imaging dataset is out of scope (wrong domain) |
 | Siamese networks, triplet/contrastive/ranking loss, FaceNet, Lab 6 (M3) | Not implemented | Face verification is off-domain for a Treasury tool and avoids handling biometric data |
 | 3D CNN / RNN for video understanding, action recognition (M4) | Not implemented | No video data in this project |
-| Attention models, Transformers, Vision Transformers, Lab 7 (M4) | Implemented | CNN vs. ViT evidence (`/evidence/cv/models`) — a ViT written from scratch, trained on the same dataset as the CNN for a direct comparison |
+| Attention models, Transformers, Vision Transformers, Lab 7 (M4) | Implemented | Financial Image Intelligence (Model Details panel, live) + CNN vs. ViT evidence (`/evidence/cv/models`) — a ViT written from scratch, trained on the same dataset as the CNN for a direct comparison |
 | YOLO (M5) | Not implemented | Same reasoning as Fast R-CNN above |
 | Zero/one/few-shot, self-supervised learning, CLIP, RL in vision (M5) | Not implemented | Lecture-only topics, no corresponding lab in the syllabus |
 
-**16/19 topics have real, tested, running code — most inside actual product features, not a
-separate lab; the remaining 3 are lecture-only topics with no lab requirement.**
+**12/19 topics have real, tested, running code (10 fully implemented, mostly inside actual
+product features rather than a separate lab; 2 partial). The remaining 7 are lecture-only
+topics or explicitly out of scope (camera geometry, neural style transfer, deep object
+detection, Siamese/face-verification networks, 3D-CNN/RNN video understanding, YOLO,
+zero-shot/self-supervised/CLIP/RL) — each with a stated reason, none silently omitted.**
 
 ## CS4104 — Computer Graphics and Virtual Reality
 
@@ -74,10 +77,10 @@ separate lab; the remaining 3 are lecture-only topics with no lab requirement.**
 | VR/AR/MR — architecture, hardware, DOF, tracking, human factors (M4) | Partial | VR/AR Concepts evidence (`/evidence/graphics/vr-ar`) — documented conceptually, no VR/AR hardware used |
 | XR concepts, marker/markerless AR, spatial computing (M5) | Partial | Same page as above |
 
-**11/14 topics fully implemented — the production-relevant ones (transforms, projection, depth,
-lighting, shading, shaders) run inside the actual 3D Market page, not a separate demo; 3 are
-documented conceptually (VR/AR, by the project's own laptop-only design) or explicitly out of this
-web app's stack (Unity).**
+**10/14 topics fully implemented — the production-relevant ones (transforms, projection, depth,
+lighting, shading, shaders) run inside the actual 3D Market page, not a separate demo; 3 more are
+documented conceptually (GPU/display architecture, VR/AR, XR — by the project's own laptop-only
+design) and 1 is explicitly out of this web app's stack (Unity).**
 
 ## The CV → Treasury → Graphics integration
 

@@ -132,14 +132,22 @@ detector was deliberately not used here (see [docs/cv_pipeline.md](docs/cv_pipel
 degrades gracefully if Tesseract isn't installed; every other stage still runs and is shown in the
 UI. Extracted values are manually correctable before being committed into the finance engine.
 
+Financial Image Intelligence also has a **Model Details** panel: live CNN + Vision Transformer
+classification of the uploaded image, both models written and trained **from scratch** on a small
+synthetic dataset. This runs for real whenever torch and the trained weights are present in the
+deployment — the same graceful-degradation pattern already used for OCR/Tesseract, since torch is
+a dev-only dependency not installed in the production build (see
+[requirements-dev.txt](backend/requirements-dev.txt)). The full aggregate
+accuracy/precision/recall/F1/confusion-matrix benchmark for both models is always available,
+independent of torch, at Methodology → Technical Evidence → CNN vs. Vision Transformer. See
+[docs/cv_models.md](docs/cv_models.md) for the full writeup and honest limitations.
+
 Two more Computer Vision capabilities are real product features, reached from **Intelligence** in
 the nav rather than a separate lab: **Compare Market Screens** (SIFT keypoint matching between two
-uploaded screenshots) and, kept as supplementary **Technical Evidence** rather than production
-features because they're evaluation exercises: filter comparison, adjustable edge detection,
-corner/blob detection, GrabCut segmentation (with real IoU/Dice benchmarks), optical flow, and a
-CNN vs. Vision Transformer comparison — both models written and trained **from scratch** on a
-small synthetic dataset, with real (not fabricated) metrics. See
-[docs/cv_models.md](docs/cv_models.md). Deep object detection (Fast R-CNN/YOLO) is honestly marked
+uploaded screenshots, with a similarity score) and, kept as supplementary **Technical Evidence**
+rather than production features because they're evaluation/benchmark exercises: filter comparison,
+adjustable edge detection, corner/blob detection, GrabCut segmentation (with real IoU/Dice
+benchmarks), and optical flow. Deep object detection (Fast R-CNN/YOLO) is honestly marked
 `NOT_TRAINED` with the reason and a reproducible pipeline spec, rather than faked — see
 Methodology → Technical Evidence → Object Detection Status.
 

@@ -111,6 +111,9 @@ export default function Overview() {
           )}
         </Panel>
         <Panel title="Technology Integration">
+          <div className="mono" style={{ fontSize: 10.5, color: "var(--text-lo)", marginBottom: 8 }}>
+            Financial Image → FOCV → Treasury Engine → P&amp;L / Risk → CGVR → 3D Visualization
+          </div>
           <table className="data-table">
             <tbody>
               <tr><td style={{ textAlign: "left", width: 100 }}>FOCV</td><td style={{ textAlign: "left" }}>Financial image understanding — <Link to="/intelligence/financial-image">Financial Image Intelligence</Link></td></tr>

@@ -71,3 +71,17 @@ in the production `requirements.txt` used by the deployed Docker image, to keep 
 and within free-tier hosting limits. The API serves the precomputed
 `backend/app/data/model_results/cnn_vs_vit.json` regardless of whether torch is installed at
 runtime.
+
+## Live per-image inference
+
+`app/cv_engine/models/train.py` also writes the trained weights (`cnn_weights.pt`,
+`vit_weights.pt`) to `backend/app/data/model_results/`. `app/cv_engine/models/infer.py` loads
+them lazily and, if and only if both torch and the weight files are present, runs live CNN + ViT
+classification on every image uploaded to Financial Image Intelligence, surfaced in that page's
+**Model Details** panel (`POST /api/cv/extract` response, `model_details` field). This is the
+same graceful-degradation pattern used for Tesseract OCR: a local dev environment with torch
+installed gets genuine live inference; the deployed production build (no torch) reports
+`{"available": false, "reason": "..."}` and points to this precomputed benchmark instead.
+Predictions on a real financial screenshot are genuine model output, not fabricated — but given
+the synthetic training data, read them as a demonstration of CNN/ViT mechanics rather than a
+claim of real-world chart-recognition accuracy.

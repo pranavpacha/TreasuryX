@@ -191,6 +191,12 @@ def main():
         }
         print(f"{name}: test accuracy={eval_result['accuracy']:.3f} params={count_params(model)} train_time={train_time:.1f}s")
 
+        # Persist trained weights so the API can offer live per-image inference (see
+        # app/cv_engine/models/infer.py) when torch happens to be installed -- not just the
+        # aggregate offline benchmark. Small models (tens of KB), safe to commit to the repo.
+        torch.save(model.state_dict(), OUT_DIR / f"{name}_weights.pt")
+        print(f"Wrote {OUT_DIR / f'{name}_weights.pt'}")
+
     (OUT_DIR / "cnn_vs_vit.json").write_text(json.dumps(results, indent=2))
     print(f"\nWrote {OUT_DIR / 'cnn_vs_vit.json'}")
 

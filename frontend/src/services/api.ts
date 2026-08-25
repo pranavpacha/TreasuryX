@@ -140,6 +140,22 @@ export interface CvField {
   unit: string | null; confidence: number; source_region: number[] | null;
 }
 
+export interface CvModelPrediction {
+  label: string;
+  confidence: number;
+  inference_ms: number;
+}
+
+export interface CvModelDetails {
+  available: boolean;
+  reason?: string;
+  classes?: string[];
+  cnn?: CvModelPrediction;
+  vit?: CvModelPrediction;
+  agree?: boolean;
+  note?: string;
+}
+
 export interface CvExtractionResult {
   id: number;
   original_filename: string;
@@ -150,6 +166,7 @@ export interface CvExtractionResult {
   fields: CvField[];
   mean_confidence: number;
   warnings: string[];
+  model_details: CvModelDetails;
 }
 
 export interface CvCommitResult {

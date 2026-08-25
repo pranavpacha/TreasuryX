@@ -31,6 +31,7 @@ export default function MarketIntelligence() {
   const [committing, setCommitting] = useState<number | null>(null);
   const [commitResults, setCommitResults] = useState<Record<number, CvCommitResult | string>>({});
   const [showDetails, setShowDetails] = useState(false);
+  const [showModelDetails, setShowModelDetails] = useState(false);
   const [howDetectedIdx, setHowDetectedIdx] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -76,7 +77,7 @@ export default function MarketIntelligence() {
 
   return (
     <div>
-      <Panel title="Financial Image Intelligence" right={<Badge kind="info">FOCV PIPELINE: OpenCV · OCR · Segmentation · CNN/ViT (evaluation)</Badge>}>
+      <Panel title="Financial Image Intelligence" right={<Badge kind="info">FOCV PIPELINE: OpenCV · OCR · Segmentation · CNN/ViT (live when available)</Badge>}>
         <p style={{ fontSize: 11, color: "var(--text-mid)", marginBottom: 8 }}>
           Upload a screenshot of an FX chart, yield curve, or financial report. TreasuryX preprocesses it, detects
           the chart region, runs OCR, extracts structured financial values, and — once you review and confirm — can
@@ -181,6 +182,45 @@ export default function MarketIntelligence() {
                   {result.ocr_text_raw || "(no text detected)"}
                 </div>
               </>
+            )}
+          </Panel>
+
+          <Panel title="Model Details — CNN vs. ViT" right={<button onClick={() => setShowModelDetails((s) => !s)}>{showModelDetails ? "Hide" : "Show"}</button>}>
+            {!showModelDetails && <p style={{ fontSize: 11, color: "var(--text-lo)" }}>Click "Show" to see how the trained CNN and Vision Transformer classify this specific image.</p>}
+            {showModelDetails && (
+              !result.model_details.available ? (
+                <div className="empty-state">
+                  {result.model_details.reason}
+                </div>
+              ) : (
+                <>
+                  <table className="data-table">
+                    <thead><tr><th>Model</th><th>Predicted class</th><th>Confidence</th><th>Inference time</th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ textAlign: "left" }}>CNN (TinyCNN, from scratch)</td>
+                        <td>{result.model_details.cnn?.label}</td>
+                        <td>{((result.model_details.cnn?.confidence ?? 0) * 100).toFixed(1)}%</td>
+                        <td>{result.model_details.cnn?.inference_ms.toFixed(2)} ms</td>
+                      </tr>
+                      <tr>
+                        <td style={{ textAlign: "left" }}>ViT (TinyViT, from scratch)</td>
+                        <td>{result.model_details.vit?.label}</td>
+                        <td>{((result.model_details.vit?.confidence ?? 0) * 100).toFixed(1)}%</td>
+                        <td>{result.model_details.vit?.inference_ms.toFixed(2)} ms</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div style={{ marginTop: 8 }}>
+                    <Badge kind={result.model_details.agree ? "info" : "warn"}>
+                      {result.model_details.agree ? "Models agree" : "Models disagree"}
+                    </Badge>
+                  </div>
+                  <p style={{ fontSize: 10.5, color: "var(--text-lo)", marginTop: 8 }}>
+                    {result.model_details.note} Full accuracy/precision/recall/F1/confusion-matrix benchmark: <Link to="/evidence/cv/models">CNN vs. Vision Transformer</Link>.
+                  </p>
+                </>
+              )
             )}
           </Panel>
         </>

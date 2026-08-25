@@ -21,7 +21,20 @@ export interface GraphicsMatrices {
   model: THREE.Matrix4;
   view: THREE.Matrix4;
   projection: THREE.Matrix4;
+  depthTest: boolean;
+  depthFuncName: string;
 }
+
+const DEPTH_FUNC_NAMES: Record<number, string> = {
+  [THREE.NeverDepth]: "NEVER",
+  [THREE.AlwaysDepth]: "ALWAYS",
+  [THREE.LessDepth]: "LESS",
+  [THREE.LessEqualDepth]: "LEQUAL",
+  [THREE.EqualDepth]: "EQUAL",
+  [THREE.GreaterEqualDepth]: "GEQUAL",
+  [THREE.GreaterDepth]: "GREATER",
+  [THREE.NotEqualDepth]: "NOTEQUAL",
+};
 
 export interface SurfacePlotProps {
   xLabels: string[]; // columns
@@ -171,10 +184,13 @@ function Surface({
     if (onMatrices && meshRef.current) {
       meshRef.current.updateMatrixWorld();
       camera.updateMatrixWorld();
+      const material = meshRef.current.material as THREE.Material;
       onMatrices({
         model: meshRef.current.matrixWorld.clone(),
         view: camera.matrixWorldInverse.clone(),
         projection: (camera as THREE.PerspectiveCamera).projectionMatrix.clone(),
+        depthTest: material.depthTest,
+        depthFuncName: DEPTH_FUNC_NAMES[material.depthFunc] ?? `unknown (${material.depthFunc})`,
       });
     }
   });

@@ -20,6 +20,19 @@ const mockExtraction = {
   ],
   mean_confidence: 0.91,
   warnings: [],
+  model_details: { available: false, reason: "Live model inference requires torch, a dev-only dependency not installed in this deployment." },
+};
+
+const mockExtractionWithModels = {
+  ...mockExtraction,
+  model_details: {
+    available: true,
+    classes: ["fx_line_chart", "yield_curve_chart", "bar_chart", "table_report"],
+    cnn: { label: "fx_line_chart", confidence: 0.87, inference_ms: 1.2 },
+    vit: { label: "fx_line_chart", confidence: 0.73, inference_ms: 2.4 },
+    agree: true,
+    note: "Both models were trained from scratch on a small synthetic 4-class chart dataset.",
+  },
 };
 
 function uploadChart() {
@@ -59,8 +72,29 @@ describe("Financial Image Intelligence page", () => {
     uploadChart();
     await waitFor(() => expect(screen.getByText("USD/INR")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText("Show"));
+    fireEvent.click(screen.getAllByText("Show")[0]);
     expect(screen.getByText(/1\. Original/)).toBeInTheDocument();
+  });
+
+  it("shows a graceful unavailable message for Model Details when torch/weights aren't present", async () => {
+    vi.spyOn(api, "post").mockResolvedValueOnce({ data: mockExtraction });
+    renderPage();
+    uploadChart();
+    await waitFor(() => expect(screen.getByText("USD/INR")).toBeInTheDocument());
+
+    fireEvent.click(screen.getAllByText("Show")[1]);
+    expect(screen.getByText(/Live model inference requires torch/)).toBeInTheDocument();
+  });
+
+  it("shows live CNN vs. ViT predictions in Model Details when available", async () => {
+    vi.spyOn(api, "post").mockResolvedValueOnce({ data: mockExtractionWithModels });
+    renderPage();
+    uploadChart();
+    await waitFor(() => expect(screen.getByText("USD/INR")).toBeInTheDocument());
+
+    fireEvent.click(screen.getAllByText("Show")[1]);
+    expect(screen.getByText("Models agree")).toBeInTheDocument();
+    expect(screen.getAllByText("fx_line_chart").length).toBeGreaterThan(0);
   });
 
   it("saves the corrected value BEFORE committing, then applies it and shows the portfolio update", async () => {

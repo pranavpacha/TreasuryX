@@ -26,8 +26,8 @@ export default function CompareMarketScreens() {
             <div className="grid grid-4" style={{ marginBottom: 12 }}>
               <Metric label="Keypoints (Screen A)" value={String(result.result.n_keypoints_a)} />
               <Metric label="Keypoints (Screen B)" value={String(result.result.n_keypoints_b)} />
-              <Metric label="Candidate matches" value={String(result.result.n_matches_raw)} />
               <Metric label="Confident matches" value={String(result.result.n_good_matches)} />
+              <Metric label="Similarity" value={`${result.result.similarity_pct}%`} />
             </div>
             <ImageGrid images={result.images} labels={{ keypoints_a: "Screen A keypoints", keypoints_b: "Screen B keypoints", matches: "Matched regions" }} />
             <Panel title="How this works">
@@ -35,9 +35,10 @@ export default function CompareMarketScreens() {
                 Each image is reduced to scale-invariant keypoints with 128-dimension descriptors. Descriptors are
                 matched between the two screens (k=2 nearest neighbors) and Lowe's ratio test discards ambiguous
                 matches — a match is kept only if the best candidate is meaningfully closer than the second-best
-                (ratio &lt; {result.result.match_ratio_threshold}). A high confident-match count relative to keypoints
-                suggests the two screens share substantial visual structure (same layout/template); a low count
-                suggests they're materially different documents.
+                (ratio &lt; {result.result.match_ratio_threshold}). Similarity is confident matches as a percentage
+                of the smaller image's keypoint count: a high value suggests the two screens share substantial
+                visual structure (same layout/template); a low value suggests they're materially different
+                documents.
               </p>
             </Panel>
           </>

@@ -35,7 +35,7 @@ export interface SiftResult {
   images: Record<string, string>;
   result: {
     n_keypoints_a: number; n_keypoints_b: number; n_descriptors_a: number; n_descriptors_b: number;
-    n_matches_raw: number; n_good_matches: number; match_ratio_threshold: number;
+    n_matches_raw: number; n_good_matches: number; match_ratio_threshold: number; similarity_pct: number;
   };
 }
 export const runSiftLab = (fileA: File, fileB: File, ratio_thresh: number) =>

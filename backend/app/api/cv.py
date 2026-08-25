@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.cv_engine.models.infer import classify_image_bytes
 from app.cv_engine.pipeline import run_pipeline
 from app.data.provider import MarketDataProvider
 from app.database import get_db
@@ -76,6 +77,7 @@ async def extract(file: UploadFile, db: Session = Depends(get_db)):
         "fields": result["fields"],
         "mean_confidence": result["mean_confidence"],
         "warnings": result["warnings"],
+        "model_details": classify_image_bytes(content),
     }
 
 

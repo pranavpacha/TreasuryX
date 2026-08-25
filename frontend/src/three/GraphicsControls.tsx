@@ -61,7 +61,7 @@ export function Treasury3DControls({
                 <tbody>
                   <tr><td style={{ textAlign: "left" }}>Projection</td><td style={{ textAlign: "left" }}>{projectionMode === "perspective" ? "Perspective (FOV 45°, near 0.1, far 100)" : "Orthographic (zoom 45, near 0.1, far 100)"}</td></tr>
                   <tr><td style={{ textAlign: "left" }}>Render mode</td><td style={{ textAlign: "left" }}>{renderMode === "material" ? "MeshStandardMaterial (PBR-lite)" : "Custom GLSL ShaderMaterial"}</td></tr>
-                  <tr><td style={{ textAlign: "left" }}>Depth test</td><td style={{ textAlign: "left" }}>ON, function LESS (WebGL default z-buffer)</td></tr>
+                  <tr><td style={{ textAlign: "left" }}>Depth test (live)</td><td style={{ textAlign: "left" }}>{matrices ? `${matrices.depthTest ? "ON" : "OFF"}, function ${matrices.depthFuncName} (read from the active material)` : "pending first frame..."}</td></tr>
                   <tr><td style={{ textAlign: "left" }}>Lighting</td><td style={{ textAlign: "left" }}>Ambient + 2 directional lights{renderMode === "shader" ? " (1 animated, feeding the shader's diffuse term)" : ""}</td></tr>
                   <tr><td style={{ textAlign: "left" }}>Coordinate system</td><td style={{ textAlign: "left" }}>Right-handed, Y-up</td></tr>
                 </tbody>

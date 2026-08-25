@@ -37,10 +37,14 @@ def run_sift_matching(gray_a: np.ndarray, gray_b: np.ndarray, ratio_thresh: floa
         result["n_matches_raw"] = len(raw_matches)
         good = [m for m, n in raw_matches if m.distance < ratio_thresh * n.distance]
         result["n_good_matches"] = len(good)
+        smaller_side = min(len(kp_a), len(kp_b))
+        result["similarity_pct"] = round(100.0 * len(good) / smaller_side, 1) if smaller_side else 0.0
         good_sorted = sorted(good, key=lambda m: m.distance)[:40]
         match_img = cv2.drawMatches(
             gray_a, kp_a, gray_b, kp_b, good_sorted, None,
             flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
         )
+    else:
+        result["similarity_pct"] = 0.0
 
     return {"result": result, "keypoints_a": kp_img_a, "keypoints_b": kp_img_b, "matches": match_img}

@@ -151,6 +151,27 @@ def test_cv_extract_rejects_corrupt_image(client):
     assert r.status_code == 400
 
 
+def test_cv_extract_model_details_shape(client):
+    """model_details must always be present and internally consistent, whether or not
+    torch/trained weights are available in the environment running the test (see
+    app/cv_engine/models/infer.py's graceful-degradation contract)."""
+    img = np.full((200, 300, 3), 255, dtype=np.uint8)
+    cv2.putText(img, "USD/INR 83.45", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+    ok, buf = cv2.imencode(".png", img)
+    assert ok
+    r = client.post("/api/cv/extract", files={"file": ("chart.png", io.BytesIO(buf.tobytes()), "image/png")})
+    assert r.status_code == 200
+    model_details = r.json()["model_details"]
+    assert "available" in model_details
+    if model_details["available"]:
+        assert model_details["cnn"]["label"] in model_details["classes"]
+        assert model_details["vit"]["label"] in model_details["classes"]
+        assert 0.0 <= model_details["cnn"]["confidence"] <= 1.0
+        assert isinstance(model_details["agree"], bool)
+    else:
+        assert model_details["reason"]
+
+
 def test_market3d_yield_surface(client):
     r = client.get("/api/market3d/yield-surface")
     assert r.status_code == 200
