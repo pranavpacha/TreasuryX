@@ -9,7 +9,7 @@ const STAGE_LABELS: Record<string, string> = {
   grayscale: "2. Grayscale",
   denoised: "3. Denoised (Non-local Means)",
   normalized: "4. Contrast Normalized (CLAHE)",
-  thresholded: "5. Adaptive Threshold",
+  thresholded: "5. Segmentation (Adaptive Threshold Mask)",
   edges: "6. Canny Edge Detection",
   regions: "7. Detected Chart Region + Hough Lines",
 };
@@ -19,7 +19,7 @@ const STAGE_PURPOSE: Record<string, string> = {
   grayscale: "Removes color to simplify structural analysis.",
   denoised: "Non-local-means denoising removes screenshot compression artifacts.",
   normalized: "CLAHE boosts local contrast so faint gridlines/text become readable.",
-  thresholded: "Adaptive binarization separates text/lines from background.",
+  thresholded: "Adaptive binarization segments the image into a text/line foreground mask vs. background — the classical (non-GrabCut) segmentation stage used in production.",
   edges: "Canny edge detection finds chart boundaries and axis lines.",
   regions: "Hough line transform + contour detection locates the plotted chart area.",
 };

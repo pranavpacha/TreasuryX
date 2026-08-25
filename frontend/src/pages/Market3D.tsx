@@ -8,7 +8,7 @@ import { SurfacePlot } from "../three/SurfacePlot";
 const TENOR_ORDER = ["1M", "3M", "6M", "1Y", "2Y", "5Y", "10Y", "30Y"];
 
 function YieldSurfaceTab() {
-  const { data, loading, error } = useApi(() => fetchYieldSurface(24));
+  const { data, loading, error, reload } = useApi(() => fetchYieldSurface(24));
   const state = useTreasury3DState(0.7);
   const grid = useMemo(() => {
     if (!data) return null;
@@ -23,6 +23,9 @@ function YieldSurfaceTab() {
   if (!grid) return null;
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <button onClick={reload} title="Re-fetch from the live Treasury engine — pulls in any CV correction, trade, or scenario run since this page loaded">Refresh Data</button>
+      </div>
       <Treasury3DControls
         state={state}
         dataMapping={{ source: "GET /api/market3d/yield-surface (live yield-curve history, CV-corrected values included)", xMapping: "maturity tenor", yMapping: "yield (%)", zMapping: "observation date" }}
@@ -40,7 +43,7 @@ function YieldSurfaceTab() {
 }
 
 function FxVolSurfaceTab() {
-  const { data, loading, error } = useApi(fetchFxVolSurface);
+  const { data, loading, error, reload } = useApi(fetchFxVolSurface);
   const state = useTreasury3DState(0.6);
   const grid = useMemo(() => {
     if (!data) return null;
@@ -54,6 +57,9 @@ function FxVolSurfaceTab() {
   if (!grid) return null;
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <button onClick={reload} title="Re-fetch from the live Treasury engine — pulls in any CV correction, trade, or scenario run since this page loaded">Refresh Data</button>
+      </div>
       <Treasury3DControls
         state={state}
         dataMapping={{ source: "GET /api/market3d/fx-vol-surface (rolling annualized volatility per pair, live demo FX history)", xMapping: "lookback window (days)", yMapping: "annualized volatility (%)", zMapping: "FX pair" }}
@@ -71,7 +77,7 @@ function FxVolSurfaceTab() {
 }
 
 function StressSurfaceTab() {
-  const { data, loading, error } = useApi(() => fetchStressSurface(9, 9));
+  const { data, loading, error, reload } = useApi(() => fetchStressSurface(9, 9));
   const state = useTreasury3DState(0.55);
   const grid = useMemo(() => {
     if (!data) return null;
@@ -87,6 +93,9 @@ function StressSurfaceTab() {
   if (!grid.hasPositions) return <div className="empty-state">No open positions — book a simulated FX or bond trade to see the P&L stress surface.</div>;
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <button onClick={reload} title="Re-fetch from the live Treasury engine — pulls in any CV correction, trade, or scenario run since this page loaded">Refresh Data</button>
+      </div>
       <Treasury3DControls
         state={state}
         dataMapping={{ source: "GET /api/market3d/stress-surface (real scenario engine, current open positions + any CV-corrected market levels)", xMapping: "USD/INR shock (%)", yMapping: "total portfolio P&L (INR)", zMapping: "parallel yield shock (bps)" }}
