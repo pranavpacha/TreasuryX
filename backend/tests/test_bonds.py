@@ -44,6 +44,19 @@ def test_bond_price_invalid_inputs():
         bond_price(face=100, coupon_rate=0.05, yield_rate=0.05, years_to_maturity=-1, frequency=2)
 
 
+def test_bond_price_near_maturity_still_has_one_period():
+    # Regression: a semi-annual bond with 0.2yr left rounds to round(0.2*2)=0 periods under
+    # naive round()-only logic, which would wrongly report a live bond as "already matured".
+    # A bond that hasn't matured always has at least its final coupon+principal payment due.
+    price = bond_price(face=100, coupon_rate=0.07, yield_rate=0.07, years_to_maturity=0.2, frequency=2)
+    assert price == pytest.approx(100.0, abs=1e-6)  # par bond: coupon == yield
+
+
+def test_bond_price_at_exact_maturity_raises():
+    with pytest.raises(BondError):
+        bond_price(face=100, coupon_rate=0.05, yield_rate=0.05, years_to_maturity=0, frequency=2)
+
+
 def test_accrued_and_clean_dirty_relationship():
     dirty = bond_price(face=100, coupon_rate=0.07, yield_rate=0.07, years_to_maturity=10, frequency=2, settle_frac=0.5)
     accrued = accrued_interest(face=100, coupon_rate=0.07, frequency=2, settle_frac=0.5)

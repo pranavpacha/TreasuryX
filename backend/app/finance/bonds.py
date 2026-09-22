@@ -27,9 +27,13 @@ class BondError(ValueError):
 
 
 def _num_periods(years_to_maturity: float, frequency: int) -> int:
-    n = round(years_to_maturity * frequency)
-    if n < 1:
+    if years_to_maturity <= 0:
         raise BondError("Bond has no remaining coupon periods (already matured)")
+    # A bond that hasn't matured always has at least one more coupon/principal payment
+    # due, even if it's within half a period of maturity -- round() alone can floor a
+    # small-but-positive years_to_maturity to 0 periods (e.g. 0.2yr at semi-annual
+    # frequency rounds to 0), which would wrongly report a live bond as matured.
+    n = max(1, round(years_to_maturity * frequency))
     return int(n)
 
 
