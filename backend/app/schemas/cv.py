@@ -10,6 +10,8 @@ class ExtractedField(BaseModel):
     unit: str | None = None
     confidence: float
     source_region: list[int] | None = None  # [x, y, w, h]
+    flagged: bool = False
+    flag_reason: str | None = None
 
 
 class CvExtractionResponse(BaseModel):

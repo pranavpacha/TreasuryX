@@ -138,6 +138,7 @@ export interface ScenarioResponse {
 export interface CvField {
   instrument: string | null; metric: string | null; value: number | null;
   unit: string | null; confidence: number; source_region: number[] | null;
+  flagged?: boolean; flag_reason?: string | null;
 }
 
 export interface CvModelPrediction {
@@ -156,10 +157,21 @@ export interface CvModelDetails {
   note?: string;
 }
 
+export interface CvImageQuality {
+  width: number;
+  height: number;
+  blur_variance: number;
+  contrast_std: number;
+  verdict: "low" | "ok";
+  reasons: string[];
+  recommendation: string | null;
+}
+
 export interface CvExtractionResult {
   id: number;
   original_filename: string;
   chart_type: string;
+  image_quality: CvImageQuality;
   stages: Record<string, string>;
   ocr_text_raw: string;
   ocr_available: boolean;

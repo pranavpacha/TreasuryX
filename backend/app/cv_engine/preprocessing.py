@@ -30,6 +30,45 @@ def resize_keep_aspect(img: np.ndarray, max_dim: int = MAX_DIM) -> np.ndarray:
     return img
 
 
+
+# Heuristic thresholds for image-quality gating, applied to the ORIGINAL (pre-resize)
+# image so a large image downscaled by resize_keep_aspect doesn't get penalized for its
+# post-resize dimensions. Blur is the variance of the Laplacian -- a standard, widely-cited
+# focus measure (low variance = few sharp edges = likely blurry); the exact threshold is
+# image-content-dependent, so this is a heuristic flag for the user, not a hard rejection.
+MIN_DIM_OK = 200
+BLUR_VARIANCE_LOW = 50.0
+CONTRAST_STD_LOW = 20.0
+
+
+def assess_image_quality(img_bgr: np.ndarray) -> dict:
+    """Real, computed quality indicators (not fabricated) -- resolution, a Laplacian-variance
+    blur estimate, and grayscale contrast (std-dev) -- surfaced to the user before they spend
+    time reviewing extraction results from an image that was never going to OCR well."""
+    h, w = img_bgr.shape[:2]
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY) if img_bgr.ndim == 3 else img_bgr
+    blur_variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    contrast_std = float(gray.std())
+
+    reasons: list[str] = []
+    if min(h, w) < MIN_DIM_OK:
+        reasons.append(f"Low resolution ({w}x{h}px, smaller side under {MIN_DIM_OK}px).")
+    if blur_variance < BLUR_VARIANCE_LOW:
+        reasons.append(f"Image appears blurry (edge-sharpness score {blur_variance:.1f}, below {BLUR_VARIANCE_LOW:.0f}).")
+    if contrast_std < CONTRAST_STD_LOW:
+        reasons.append(f"Low contrast (intensity std-dev {contrast_std:.1f}, below {CONTRAST_STD_LOW:.0f}).")
+
+    return {
+        "width": w,
+        "height": h,
+        "blur_variance": round(blur_variance, 1),
+        "contrast_std": round(contrast_std, 1),
+        "verdict": "low" if reasons else "ok",
+        "reasons": reasons,
+        "recommendation": "Upload a higher-resolution, well-lit, in-focus screenshot for more reliable extraction." if reasons else None,
+    }
+
+
 def preprocess(img_bgr: np.ndarray) -> dict[str, np.ndarray]:
     """Returns a dict of named intermediate images for the CV pipeline viewer."""
     resized = resize_keep_aspect(img_bgr)

@@ -14,6 +14,13 @@ const STAGE_LABELS: Record<string, string> = {
   regions: "7. Detected Chart Region + Hough Lines",
 };
 
+const CNN_CLASS_TO_PIPELINE: Record<string, string> = {
+  fx_line_chart: "FX spot/rate extraction",
+  yield_curve_chart: "Yield curve extraction",
+  bar_chart: "General numeric/report extraction",
+  table_report: "Report/table extraction",
+};
+
 const STAGE_PURPOSE: Record<string, string> = {
   original: "The uploaded image, resized so processing stays fast on a laptop.",
   grayscale: "Removes color to simplify structural analysis.",
@@ -94,6 +101,13 @@ export default function MarketIntelligence() {
 
       {result && (
         <>
+          {result.image_quality.verdict === "low" && (
+            <div className="disclaimer-bar" style={{ borderColor: "var(--down)" }}>
+              <div><strong>IMAGE QUALITY: LOW</strong> ({result.image_quality.width}×{result.image_quality.height}px, edge-sharpness {result.image_quality.blur_variance}, contrast {result.image_quality.contrast_std})</div>
+              {result.image_quality.reasons.map((r, i) => <div key={i}>Reason: {r}</div>)}
+              <div>Recommendation: {result.image_quality.recommendation}</div>
+            </div>
+          )}
           <Panel title="Extracted Financial Information" right={<span style={{ fontSize: 10.5, color: "var(--text-mid)" }}>Chart type: {result.chart_type} · Mean confidence: {(result.mean_confidence * 100).toFixed(0)}%</span>}>
             {result.warnings.length > 0 && (
               <div className="disclaimer-bar">
@@ -114,11 +128,15 @@ export default function MarketIntelligence() {
                     />
                     <span style={{ fontSize: 10.5, color: "var(--text-lo)" }}>{f.unit}</span>
                     <Badge kind={f.confidence >= 0.7 ? "info" : "warn"}>{(f.confidence * 100).toFixed(0)}%</Badge>
+                    {f.flagged && <Badge kind="warn">FLAGGED</Badge>}
                     <button onClick={() => setHowDetectedIdx(howDetectedIdx === i ? null : i)}>How Detected?</button>
                     <button className="primary" style={{ marginLeft: "auto" }} disabled={!f.instrument || committing === i} onClick={() => applyToTreasury(i)}>
                       {committing === i ? "Applying…" : "Apply to Treasury"}
                     </button>
                   </div>
+                  {f.flagged && f.flag_reason && (
+                    <div style={{ fontSize: 10.5, color: "var(--down)", marginTop: 2 }}>⚠ {f.flag_reason}</div>
+                  )}
 
                   {howDetectedIdx === i && (
                     <div className="panel" style={{ marginTop: 8, fontSize: 11, color: "var(--text-mid)" }}>
@@ -211,10 +229,15 @@ export default function MarketIntelligence() {
                       </tr>
                     </tbody>
                   </table>
-                  <div style={{ marginTop: 8 }}>
+                  <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                     <Badge kind={result.model_details.agree ? "info" : "warn"}>
                       {result.model_details.agree ? "Models agree" : "Models disagree"}
                     </Badge>
+                    {!result.model_details.agree && <span style={{ fontSize: 10.5, color: "var(--down)" }}>MANUAL REVIEW RECOMMENDED</span>}
+                  </div>
+                  <div style={{ fontSize: 11, marginTop: 8 }}>
+                    <strong>CNN-recommended pipeline:</strong> {CNN_CLASS_TO_PIPELINE[result.model_details.cnn?.label ?? ""] ?? "General extraction"}{" "}
+                    <span style={{ color: "var(--text-lo)" }}>(informational -- the chart type shown above is keyword-based and drives actual routing/extraction)</span>
                   </div>
                   <p style={{ fontSize: 10.5, color: "var(--text-lo)", marginTop: 8 }}>
                     {result.model_details.note} Full accuracy/precision/recall/F1/confusion-matrix benchmark: <Link to="/evidence/cv/models">CNN vs. Vision Transformer</Link>.

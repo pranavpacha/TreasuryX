@@ -11,7 +11,7 @@ import pytest
 
 from app.cv_engine.edges import detect_chart_region, detect_edges, detect_lines
 from app.cv_engine.pipeline import classify_chart_type, run_pipeline
-from app.cv_engine.preprocessing import preprocess
+from app.cv_engine.preprocessing import assess_image_quality, preprocess
 
 
 def _make_chart_image(text_lines: list[str], size=(500, 800), noise: float = 0.0, low_res: bool = False) -> bytes:
@@ -112,3 +112,31 @@ def test_pipeline_handles_blank_difficult_image_with_warning():
 def test_pipeline_rejects_corrupt_image():
     with pytest.raises(ValueError):
         run_pipeline(b"not an image", "bad.png")
+
+
+def test_assess_image_quality_flags_low_resolution_blurry_low_contrast():
+    # 40x30, near-uniform gray -- tiny, no edges (blurry by the Laplacian-variance measure),
+    # and low contrast all at once.
+    img = np.full((30, 40, 3), 200, dtype=np.uint8)
+    quality = assess_image_quality(img)
+    assert quality["verdict"] == "low"
+    assert quality["width"] == 40 and quality["height"] == 30
+    assert len(quality["reasons"]) >= 2  # resolution + contrast at minimum
+    assert quality["recommendation"] is not None
+
+
+def test_assess_image_quality_passes_sharp_high_contrast_image():
+    png = _make_chart_image(["USD/INR 83.45", "10Y 7.05%"])
+    arr = np.frombuffer(png, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    quality = assess_image_quality(img)
+    assert quality["verdict"] == "ok"
+    assert quality["reasons"] == []
+    assert quality["recommendation"] is None
+
+
+def test_pipeline_includes_image_quality_for_low_res_image():
+    png = _make_chart_image(["GBP/INR 105.4"], low_res=True)
+    result = run_pipeline(png, "lowres.png")
+    assert result["image_quality"]["verdict"] == "low"
+    assert any("resolution" in r.lower() for r in result["image_quality"]["reasons"])

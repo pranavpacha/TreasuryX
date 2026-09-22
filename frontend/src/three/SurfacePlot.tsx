@@ -57,6 +57,19 @@ export interface SurfacePlotProps {
   ambientIntensity?: number;
   directionalIntensity?: number;
   onMatrices?: (m: GraphicsMatrices) => void;
+  /** Real model-transform controls (section 23): applied to a <group> wrapping the mesh,
+   * wireframe and hover markers together, so the Model matrix read out under Graphics
+   * Details genuinely changes -- not an identity transform. Degrees, converted to radians
+   * at render time. */
+  rotationXDeg?: number;
+  rotationYDeg?: number;
+  rotationZDeg?: number;
+  verticalScale?: number;
+  /** "surface" (mesh only), "wireframe" (lines only), "both" (default, prior behaviour). */
+  displayMode?: "surface" | "wireframe" | "both";
+  /** Sparse per-vertex normal vectors, off by default -- demonstrates the geometry's
+   * computed normals (computeVertexNormals) that lighting/shading depend on. */
+  showNormals?: boolean;
 }
 
 function colorFor(norm: number, mode: "sequential" | "diverging"): THREE.Color {
@@ -153,18 +166,34 @@ void main() {
 
 export { RISK_FRAGMENT_SHADER, RISK_VERTEX_SHADER };
 
+function buildNormalsGeometry(geometry: THREE.BufferGeometry, sampleEvery = 4, length = 0.45): THREE.BufferGeometry {
+  const pos = geometry.attributes.position;
+  const norm = geometry.attributes.normal;
+  const pts: number[] = [];
+  for (let i = 0; i < pos.count; i += sampleEvery) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const nx = norm.getX(i), ny = norm.getY(i), nz = norm.getZ(i);
+    pts.push(x, y, z, x + nx * length, y + ny * length, z + nz * length);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  return g;
+}
+
 function Surface({
-  values, colorMode, heightScale, renderMode, shaderThreshold, depthTest, onMatrices,
+  values, colorMode, heightScale, renderMode, shaderThreshold, depthTest, onMatrices, displayMode, showNormals,
 }: {
   values: number[][]; colorMode: "sequential" | "diverging"; heightScale: number;
   renderMode: "material" | "shader"; shaderThreshold: number; depthTest: boolean;
   onMatrices?: (m: GraphicsMatrices) => void;
+  displayMode: "surface" | "wireframe" | "both"; showNormals: boolean;
 }) {
   const { geometry, max: maxHeight } = useMemo(() => {
     const built = buildGeometry(values, colorMode, heightScale);
     return { ...built, max: heightScale }; // height is normalized into [0, heightScale] by construction
   }, [values, colorMode, heightScale]);
   const wireframe = useMemo(() => new THREE.WireframeGeometry(geometry), [geometry]);
+  const normalsGeometry = useMemo(() => buildNormalsGeometry(geometry), [geometry]);
 
   const uniforms = useMemo(() => ({
     uThreshold: { value: shaderThreshold },
@@ -197,16 +226,23 @@ function Surface({
 
   return (
     <group>
-      <mesh geometry={geometry} ref={meshRef}>
+      <mesh geometry={geometry} ref={meshRef} visible={displayMode !== "wireframe"}>
         {renderMode === "shader" ? (
           <shaderMaterial vertexShader={RISK_VERTEX_SHADER} fragmentShader={RISK_FRAGMENT_SHADER} uniforms={uniforms} side={THREE.DoubleSide} depthTest={depthTest} />
         ) : (
           <meshStandardMaterial vertexColors flatShading side={THREE.DoubleSide} roughness={0.6} metalness={0.05} depthTest={depthTest} />
         )}
       </mesh>
-      <lineSegments geometry={wireframe}>
-        <lineBasicMaterial color="#0a0d12" transparent opacity={0.35} />
-      </lineSegments>
+      {displayMode !== "surface" && (
+        <lineSegments geometry={wireframe}>
+          <lineBasicMaterial color={displayMode === "wireframe" ? "#3b82f6" : "#0a0d12"} transparent={displayMode !== "wireframe"} opacity={displayMode === "wireframe" ? 1 : 0.35} />
+        </lineSegments>
+      )}
+      {showNormals && (
+        <lineSegments geometry={normalsGeometry}>
+          <lineBasicMaterial color="#f5a623" />
+        </lineSegments>
+      )}
     </group>
   );
 }
@@ -269,6 +305,8 @@ export function SurfacePlot({
   colorMode = "sequential", heightScale = 3.5, renderMode = "material", shaderThreshold = 0.5,
   projectionMode = "perspective", fov = 45, depthTest = true,
   ambientIntensity = 0.55, directionalIntensity = 1.1, onMatrices,
+  rotationXDeg = 0, rotationYDeg = 0, rotationZDeg = 0, verticalScale = 1,
+  displayMode = "both", showNormals = false,
 }: SurfacePlotProps) {
   if (values.length === 0 || values[0].length === 0) {
     return <div className="empty-state">No data to visualize.</div>;
@@ -285,8 +323,16 @@ export function SurfacePlot({
           <ambientLight intensity={ambientIntensity} />
           <directionalLight position={[6, 10, 4]} intensity={directionalIntensity} />
           <directionalLight position={[-6, 4, -4]} intensity={0.3} />
-          <Surface values={values} colorMode={colorMode} heightScale={heightScale} renderMode={renderMode} shaderThreshold={shaderThreshold} depthTest={depthTest} onMatrices={onMatrices} />
-          <HoverMarkers values={values} xLabels={xLabels} yLabels={yLabels} formatValue={formatValue} heightScale={heightScale} />
+          {/* Real model transform (section 23): rotation + vertical scale applied to this
+              group, composing into the live Model matrix read from meshRef.matrixWorld --
+              mesh, wireframe and hover markers all move together, consistently. */}
+          <group
+            rotation={[THREE.MathUtils.degToRad(rotationXDeg), THREE.MathUtils.degToRad(rotationYDeg), THREE.MathUtils.degToRad(rotationZDeg)]}
+            scale={[1, verticalScale, 1]}
+          >
+            <Surface values={values} colorMode={colorMode} heightScale={heightScale} renderMode={renderMode} shaderThreshold={shaderThreshold} depthTest={depthTest} onMatrices={onMatrices} displayMode={displayMode} showNormals={showNormals} />
+            <HoverMarkers values={values} xLabels={xLabels} yLabels={yLabels} formatValue={formatValue} heightScale={heightScale} />
+          </group>
           <axesHelper args={[6]} />
           <OrbitControls enablePan enableZoom enableRotate makeDefault />
         </Canvas>

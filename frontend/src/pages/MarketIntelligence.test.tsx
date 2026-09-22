@@ -21,6 +21,7 @@ const mockExtraction = {
   mean_confidence: 0.91,
   warnings: [],
   model_details: { available: false, reason: "Live model inference requires torch, a dev-only dependency not installed in this deployment." },
+  image_quality: { width: 300, height: 200, blur_variance: 250.0, contrast_std: 60.0, verdict: "ok" as const, reasons: [], recommendation: null },
 };
 
 const mockExtractionWithModels = {
@@ -53,6 +54,24 @@ describe("Financial Image Intelligence page", () => {
     // Stage images are behind the "Processing Details" disclosure, not shown by default
     expect(screen.queryByText(/1\. Original/)).not.toBeInTheDocument();
     expect(screen.getByText("Processing Details")).toBeInTheDocument();
+  });
+
+  it("shows an image quality warning banner when the pipeline flags low quality", async () => {
+    vi.spyOn(api, "post").mockResolvedValueOnce({
+      data: {
+        ...mockExtraction,
+        image_quality: {
+          width: 80, height: 60, blur_variance: 12.0, contrast_std: 8.0, verdict: "low" as const,
+          reasons: ["Low resolution (80x60px, smaller side under 200px)."],
+          recommendation: "Upload a higher-resolution, well-lit, in-focus screenshot for more reliable extraction.",
+        },
+      },
+    });
+    renderPage();
+    uploadChart();
+
+    await waitFor(() => expect(screen.getByText("IMAGE QUALITY: LOW")).toBeInTheDocument());
+    expect(screen.getByText(/Low resolution/)).toBeInTheDocument();
   });
 
   it("shows a low-confidence warning banner when the pipeline reports one", async () => {

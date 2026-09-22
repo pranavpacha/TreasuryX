@@ -36,6 +36,8 @@ function YieldSurfaceTab() {
         xAxisName="Maturity (tenor)" yAxisName="Yield (%)" zAxisName="Observation date"
         formatValue={(v) => `${v.toFixed(3)}%`} colorMode="sequential"
         renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
+        rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
+        verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
         onMatrices={state.setMatrices}
       />
     </div>
@@ -70,6 +72,8 @@ function FxVolSurfaceTab() {
         xAxisName="Lookback window (days)" yAxisName="Annualized volatility (%)" zAxisName="FX pair"
         formatValue={(v) => `${v.toFixed(2)}%`} colorMode="sequential"
         renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
+        rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
+        verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
         onMatrices={state.setMatrices}
       />
     </div>
@@ -109,6 +113,8 @@ function StressSurfaceTab() {
         formatValue={(v) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
         colorMode="diverging"
         renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
+        rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
+        verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
         onMatrices={state.setMatrices}
       />
     </div>

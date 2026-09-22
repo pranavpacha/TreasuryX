@@ -71,6 +71,7 @@ async def extract(file: UploadFile, db: Session = Depends(get_db)):
         "id": record.id,
         "original_filename": record.original_filename,
         "chart_type": record.chart_type,
+        "image_quality": result["image_quality"],
         "stages": result["stages"],
         "ocr_text_raw": result["ocr_text_raw"],
         "ocr_available": result["ocr_available"],
