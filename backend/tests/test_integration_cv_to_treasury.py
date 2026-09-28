@@ -141,6 +141,52 @@ def test_reset_overrides_restores_baseline(client):
     assert next(b for b in restored if b["isin"] == isin)["is_cv_corrected"] is False
 
 
+def test_commit_by_tenor_resolves_to_closest_real_bond(client):
+    """Regression: committing a yield-curve extraction whose recognized label is a TENOR
+    ("10Y") rather than a real ISIN must map to whichever seeded bond's current
+    years-to-maturity is closest (see services/market_view.py::find_bond_by_tenor) and
+    actually apply the override to that bond -- not raise 'Unknown bond 10Y'."""
+    extraction = _upload_bond_chart(client, isin_hint_text="10Y G-Sec 7.50%")
+    client.post("/api/cv/correct", json={
+        "extraction_id": extraction["id"],
+        "corrected_fields": [{"instrument": "10Y", "metric": "yield", "value": 7.5, "unit": "pct", "confidence": 0.9, "source_region": None}],
+    })
+    r = client.post("/api/cv/commit", json={"extraction_id": extraction["id"], "target": "bond_yield", "instrument_id": "10Y"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["instrument_id"] == "10Y"
+    assert body["resolved_via_tenor_mapping"] is True
+    assert body["resolved_isin"]  # a real ISIN, not "10Y" itself
+    assert body["new_value"] == 7.5
+
+    bonds = client.get("/api/bonds").json()
+    resolved_bond = next(b for b in bonds if b["isin"] == body["resolved_isin"])
+    assert resolved_bond["current_yield_pct"] == 7.5
+    assert resolved_bond["is_cv_corrected"] is True
+
+    client.delete("/api/cv/overrides")
+
+
+def test_commit_by_unmappable_tenor_fails_gracefully_without_inventing_a_bond(client):
+    """A tenor with no reasonably-close bond in the book must be honestly reported as
+    unavailable -- never silently forced onto an unrelated bond, and never the old bare
+    'Unknown bond' message. 50Y is used because it stays outside every seeded bond's
+    tolerance band for the demo book's entire multi-year lifetime (unlike a tenor close to
+    an existing bond's maturity, which can flip from unmappable to mappable in weeks as
+    real time passes -- see test_market_view.py for the date-independent version of this
+    same check with fixed, controlled inputs)."""
+    extraction = _upload_bond_chart(client, isin_hint_text="50Y G-Sec 7.80%")
+    client.post("/api/cv/correct", json={
+        "extraction_id": extraction["id"],
+        "corrected_fields": [{"instrument": "50Y", "metric": "yield", "value": 7.8, "unit": "pct", "confidence": 0.9, "source_region": None}],
+    })
+    r = client.post("/api/cv/commit", json={"extraction_id": extraction["id"], "target": "bond_yield", "instrument_id": "50Y"})
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert "50Y" in detail
+    assert "mapping unavailable" in detail.lower()
+
+
 def test_fx_override_propagates_to_quotes_and_positions(client):
     pair = "USDINR"
     quotes_before = client.get("/api/fx/quotes").json()

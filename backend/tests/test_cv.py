@@ -10,8 +10,11 @@ import numpy as np
 import pytest
 
 from app.cv_engine.edges import detect_chart_region, detect_edges, detect_lines
+from app.cv_engine.ocr import run_ocr
 from app.cv_engine.pipeline import classify_chart_type, run_pipeline
 from app.cv_engine.preprocessing import assess_image_quality, preprocess
+
+_OCR_AVAILABLE = run_ocr(np.full((10, 10), 255, dtype=np.uint8)).available
 
 
 def _make_chart_image(text_lines: list[str], size=(500, 800), noise: float = 0.0, low_res: bool = False) -> bytes:
@@ -112,6 +115,89 @@ def test_pipeline_handles_blank_difficult_image_with_warning():
 def test_pipeline_rejects_corrupt_image():
     with pytest.raises(ValueError):
         run_pipeline(b"not an image", "bad.png")
+
+
+def _make_gsec_yield_curve_table() -> bytes:
+    """A synthetic G-Sec yield-curve table matching the exact real-world screenshot that
+    triggered the OCR-confidence/tenor-pairing bug (regression fixture for that report):
+    3M 6.71, 6M 6.78, 1Y 6.82, 2Y 6.85, 3Y 6.91, 5Y 6.95, 7Y 7.02, 10Y 7.12, 15Y 7.18,
+    20Y 7.24, 30Y 7.29. FONT_HERSHEY_DUPLEX at this size/thickness was tuned (see PR
+    discussion) to OCR cleanly under Tesseract; FONT_HERSHEY_SIMPLEX at the same size
+    misreads several short tenor tokens (3Y/5Y/7Y/30Y) as stray letters -- a font-legibility
+    limitation of the synthetic fixture, not of the extraction logic under test here.
+    """
+    rows = [
+        ("3M", 6.71), ("6M", 6.78), ("1Y", 6.82), ("2Y", 6.85), ("3Y", 6.91),
+        ("5Y", 6.95), ("7Y", 7.02), ("10Y", 7.12), ("15Y", 7.18), ("20Y", 7.24), ("30Y", 7.29),
+    ]
+    img = np.full((680, 560, 3), 255, dtype=np.uint8)
+    cv2.putText(img, "India G-Sec Yield Curve", (30, 40), cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 0, 0), 2)
+    y = 100
+    for tenor, yld in rows:
+        cv2.putText(img, tenor, (50, y), cv2.FONT_HERSHEY_DUPLEX, 0.95, (0, 0, 0), 2)
+        cv2.putText(img, f"{yld:.2f}", (250, y), cv2.FONT_HERSHEY_DUPLEX, 0.95, (0, 0, 0), 2)
+        y += 50
+    ok, buf = cv2.imencode(".png", img)
+    assert ok
+    return buf.tobytes()
+
+
+EXPECTED_GSEC_YIELDS = {
+    "3M": 6.71, "6M": 6.78, "1Y": 6.82, "2Y": 6.85, "3Y": 6.91, "5Y": 6.95,
+    "7Y": 7.02, "10Y": 7.12, "15Y": 7.18, "20Y": 7.24, "30Y": 7.29,
+}
+
+
+@pytest.mark.skipif(not _OCR_AVAILABLE, reason="Tesseract not installed in this environment")
+def test_gsec_yield_curve_extraction_regression():
+    """Regression test for the reported bug: a full G-Sec yield-curve table produced
+    OCR-confidence values masquerading as yields (e.g. "96%", "169.0%"), duplicate rows,
+    and 'Unknown bond' commits for recognized tenors. Verifies the general fix (tenor
+    regex coverage, geometry-based row/rightward pairing, dedup, forced pct unit for
+    yields) rather than any hard-coded output for this specific image."""
+    result = run_pipeline(_make_gsec_yield_curve_table(), "gsec.png")
+
+    assert result["chart_type"] == "yield_curve"
+    assert result["asset_class"] == "government_security"
+
+    by_tenor = {f["instrument"]: f for f in result["fields"]}
+
+    # No duplicate rows: exactly one field per recognized tenor.
+    instruments = [f["instrument"] for f in result["fields"]]
+    assert len(instruments) == len(set(instruments))
+
+    # No fabricated/implausible values -- every extracted field is within the sane range,
+    # in particular never a raw OCR-confidence-looking number like 96, 90, or 169.
+    for f in result["fields"]:
+        assert 0.0 <= f["value"] <= 25.0, f"{f['instrument']} got implausible value {f['value']}"
+        assert f["unit"] == "pct"
+        assert not f["flagged"], f"{f['instrument']} was flagged: {f['flag_reason']}"
+
+    # At minimum, the tenors the bug report specifically called out must be correct --
+    # value MUST come from the numeric OCR token, never from OCR confidence.
+    for tenor in ("3M", "10Y", "30Y"):
+        assert tenor in by_tenor, f"{tenor} was not extracted at all"
+        assert by_tenor[tenor]["value"] == pytest.approx(EXPECTED_GSEC_YIELDS[tenor], abs=0.02)
+        assert 0.0 < by_tenor[tenor]["confidence"] <= 1.0  # confidence is a fraction, never the yield itself
+
+    # General coverage: "at least several" of the full ladder, not just the three above --
+    # this is what distinguishes "the specific tenors got lucky" from "the tenor regex and
+    # geometry pairing generally work" (the bug report's own tenor list included 3Y/7Y/15Y/
+    # 20Y, which the OLD hand-enumerated tenor list didn't even recognize as instruments).
+    correct = sum(
+        1 for tenor, expected in EXPECTED_GSEC_YIELDS.items()
+        if tenor in by_tenor and by_tenor[tenor]["value"] == pytest.approx(expected, abs=0.02)
+    )
+    assert correct >= 7, f"only {correct}/11 tenors extracted correctly: {by_tenor}"
+
+
+@pytest.mark.skipif(not _OCR_AVAILABLE, reason="Tesseract not installed in this environment")
+def test_gsec_asset_class_not_treated_as_priceable_instrument():
+    """'G-SEC' identifies the asset class (document metadata) -- it must never appear as
+    its own field paired with some nearby number (the old bug's "Unknown bond G-SEC")."""
+    result = run_pipeline(_make_gsec_yield_curve_table(), "gsec.png")
+    instruments = [f["instrument"] for f in result["fields"] if f["instrument"]]
+    assert not any("SEC" in inst.upper() for inst in instruments)
 
 
 def test_assess_image_quality_flags_low_resolution_blurry_low_contrast():

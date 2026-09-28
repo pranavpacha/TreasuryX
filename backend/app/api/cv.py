@@ -19,7 +19,7 @@ from app.models.cv_extraction import CvExtraction
 from app.models.market_override import MarketOverride
 from app.risk.aggregator import get_bond_positions, get_fx_positions
 from app.schemas.cv import CvCommitRequest, CvCorrectionRequest
-from app.services.market_view import effective_fx_rate
+from app.services.market_view import effective_fx_rate, find_bond_by_tenor, tenor_to_years
 from app.services.overrides import list_active_overrides, set_override
 
 router = APIRouter(prefix="/api/cv", tags=["cv"])
@@ -71,6 +71,7 @@ async def extract(file: UploadFile, db: Session = Depends(get_db)):
         "id": record.id,
         "original_filename": record.original_filename,
         "chart_type": record.chart_type,
+        "asset_class": result["asset_class"],
         "image_quality": result["image_quality"],
         "stages": result["stages"],
         "ocr_text_raw": result["ocr_text_raw"],
@@ -132,14 +133,29 @@ def commit(req: CvCommitRequest, db: Session = Depends(get_db), provider: Market
 
     elif req.target == "bond_yield":
         bond = next((b for b in provider.get_bonds() if b.isin == req.instrument_id), None)
+        resolved_via_tenor = False
         if bond is None:
-            raise HTTPException(400, f"Unknown bond {req.instrument_id}")
+            # req.instrument_id wasn't a real ISIN -- if it's a recognized tenor (e.g. "10Y",
+            # as extracted from a yield-curve screenshot), map it to whichever bond's CURRENT
+            # years-to-maturity is closest, recomputed at request time (see
+            # services/market_view.py::find_bond_by_tenor for why this can't be a static
+            # table). Never invent a bond identifier for a tenor with no reasonable match.
+            tenor_years = tenor_to_years(req.instrument_id)
+            if tenor_years is not None:
+                bond = find_bond_by_tenor(provider.get_bonds(), tenor_years, date.today())
+                resolved_via_tenor = bond is not None
+        if bond is None:
+            raise HTTPException(
+                400,
+                f"Recognized tenor '{req.instrument_id}' (yield {value}%) has no closely-matching "
+                "instrument in the Treasury pricing engine -- mapping unavailable for this tenor.",
+            )
         years = max(0.05, (date.fromisoformat(bond.maturity_date) - date.today()).days / 365.25)
 
         dur_before = duration_convexity_dv01(bond.face, bond.coupon_rate, bond.current_yield / 100.0, years, bond.frequency)
         dur_after = duration_convexity_dv01(bond.face, bond.coupon_rate, value / 100.0, years, bond.frequency)
 
-        set_override(db, "BOND", req.instrument_id, "yield_pct", value, source="cv_extraction", cv_extraction_id=record.id)
+        set_override(db, "BOND", bond.isin, "yield_pct", value, source="cv_extraction", cv_extraction_id=record.id)
 
         affected_positions = [
             {
@@ -147,10 +163,11 @@ def commit(req: CvCommitRequest, db: Session = Depends(get_db), provider: Market
                 "market_value_before_inr": None, "market_value_after_inr": round(p.market_value, 2),
                 "dv01_after_inr": round(p.dv01, 2),
             }
-            for p in get_bond_positions(db, provider) if p.isin == req.instrument_id
+            for p in get_bond_positions(db, provider) if p.isin == bond.isin
         ]
         analytics = {
-            "instrument_id": req.instrument_id, "field": "yield",
+            "instrument_id": req.instrument_id, "resolved_isin": bond.isin, "resolved_via_tenor_mapping": resolved_via_tenor,
+            "field": "yield",
             "previous_value": bond.current_yield, "new_value": value, "delta_bps": round((value - bond.current_yield) * 100, 1),
             "clean_price_before": round(dur_before.price, 4), "clean_price_after": round(dur_after.price, 4),
             "modified_duration_after": round(dur_after.modified_duration, 4),

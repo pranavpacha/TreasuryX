@@ -16,7 +16,8 @@ import numpy as np
 
 from app.cv_engine.edges import detect_chart_region, detect_lines, draw_regions
 from app.cv_engine.ocr import (
-    OcrWord, extract_dates, extract_instrument_mentions, extract_numbers, run_ocr,
+    OcrWord, detect_asset_class, extract_dates, extract_fx_pair_mentions, extract_numbers,
+    extract_tenor_mentions, run_ocr,
 )
 from app.cv_engine.preprocessing import assess_image_quality, preprocess, to_base64_png
 
@@ -35,9 +36,26 @@ def classify_chart_type(raw_text: str) -> str:
 
 
 def _nearest_number_to(word: OcrWord, numbers: list[tuple[str, OcrWord]], max_dist: int = 250) -> tuple[str, OcrWord] | None:
+    """Associate a label (tenor/FX pair) with a nearby numeric OCR token using geometry,
+    not just "closest in any direction": in a table or ticker, the value for a row sits on
+    the SAME row, to the RIGHT of the label -- searching in any direction lets a wrong
+    row's number be closer than the correct one once a page has several rows of numbers.
+
+    Same-row + rightward candidates are preferred; if none exist (e.g. a value stacked
+    below a chart-point label rather than a table), fall back to nearest in any direction
+    so this still works for non-tabular layouts.
+    """
+    row_tolerance = max(word.h, 12) * 1.5
+
+    def same_row_and_right(nw: OcrWord) -> bool:
+        return abs((nw.y + nw.h / 2) - (word.y + word.h / 2)) <= row_tolerance and nw.x > word.x
+
+    same_row = [(t, nw) for t, nw in numbers if same_row_and_right(nw)]
+    pool = same_row if same_row else numbers
+
     best = None
     best_dist = max_dist
-    for text, nw in numbers:
+    for text, nw in pool:
         dist = abs(nw.x - word.x) + abs(nw.y - word.y)
         if dist < best_dist:
             best_dist = dist
@@ -100,25 +118,42 @@ def run_pipeline(image_bytes: bytes, original_filename: str) -> dict:
     # Stage 4: chart recognition
     chart_type = classify_chart_type(ocr_result.raw_text)
 
-    # Stage 5/6: structured field extraction (instrument mention -> nearest number)
+    # Stage 5/6: structured field extraction (label mention -> nearest number, by geometry)
     numbers = extract_numbers(ocr_result.words)
-    instruments = extract_instrument_mentions(ocr_result.words)
+    tenor_mentions = extract_tenor_mentions(ocr_result.words)
+    fx_mentions = extract_fx_pair_mentions(ocr_result.words)
+    asset_class = detect_asset_class(ocr_result.words)
     dates = extract_dates(ocr_result.words)
+
+    # Tag each mention with what kind of label it actually is, so metric/unit come from
+    # that -- not from the whole-image chart_type guess -- which keeps a tenor from
+    # silently becoming an FX field (or vice versa) if chart_type is misclassified.
+    # "G-SEC"/"GSEC" asset-class mentions are deliberately excluded (see detect_asset_class
+    # above): that text describes the DOCUMENT, not a row with its own numeric value, so it
+    # must never be paired with a nearby number as if it were an instrument.
+    instruments = [(t, w, "tenor") for t, w in tenor_mentions] + [(t, w, "fx_pair") for t, w in fx_mentions]
 
     fields = []
     used_numbers = set()
-    for inst_text, inst_word in instruments:
+    for inst_text, inst_word, kind in instruments:
         nearest = _nearest_number_to(inst_word, [n for n in numbers if id(n[1]) not in used_numbers])
         if nearest is None:
             continue
         text, num_word = nearest
         used_numbers.add(id(num_word))
-        value, unit = _parse_value(text)
+        value, _parsed_unit = _parse_value(text)
         if value is None:
             continue
         confidence = min(inst_word.conf, num_word.conf)
-        field_metric = "yield" if chart_type == "yield_curve" else "spot"
-        field_unit = "pct" if unit == "pct" else ("INR per unit" if chart_type == "fx_chart" else "level")
+        if kind == "tenor":
+            field_metric = "yield"
+            # Yields are always a percentage in this domain -- force it rather than relying
+            # on OCR having captured a literal '%' glyph next to the number (it often drops
+            # thin punctuation), which previously mislabeled the unit as "level".
+            field_unit = "pct"
+        else:
+            field_metric = "spot"
+            field_unit = "INR per unit"
         flag_reason = _check_plausibility(field_metric, field_unit, value)
         fields.append({
             "instrument": inst_text,
@@ -130,6 +165,17 @@ def run_pipeline(image_bytes: bytes, original_filename: str) -> dict:
             "flagged": flag_reason is not None,
             "flag_reason": flag_reason,
         })
+
+    # Deduplicate: the same tenor/pair can legitimately appear twice in one image (e.g. a
+    # chart axis label plus an accompanying data-table row), each independently pairing
+    # with a nearby number -- keep only the highest-confidence occurrence per (instrument,
+    # metric). Fixed here at the structured-extraction layer, not hidden in the UI.
+    deduped: dict[tuple[str | None, str], dict] = {}
+    for f in fields:
+        key = (f["instrument"], f["metric"])
+        if key not in deduped or f["confidence"] > deduped[key]["confidence"]:
+            deduped[key] = f
+    fields = list(deduped.values())
 
     if not fields and numbers:
         # Fall back: surface raw numbers found even without a matched instrument label,
@@ -169,6 +215,7 @@ def run_pipeline(image_bytes: bytes, original_filename: str) -> dict:
             "regions": to_base64_png(regions_overlay),
         },
         "chart_type": chart_type,
+        "asset_class": asset_class,
         "ocr_text_raw": ocr_result.raw_text,
         "detected_dates": [d[0] for d in dates],
         "fields": fields,

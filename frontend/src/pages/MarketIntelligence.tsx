@@ -133,7 +133,7 @@ export default function MarketIntelligence() {
               <div>Recommendation: {result.image_quality.recommendation}</div>
             </div>
           )}
-          <Panel title="Extracted Financial Information" right={<span style={{ fontSize: 10.5, color: "var(--text-mid)" }}>Chart type: {result.chart_type} · Mean confidence: {(result.mean_confidence * 100).toFixed(0)}%</span>}>
+          <Panel title="Extracted Financial Information" right={<span style={{ fontSize: 10.5, color: "var(--text-mid)" }}>Chart type: {result.chart_type}{result.asset_class && ` · Asset class: ${result.asset_class.replace(/_/g, " ")}`} · Mean confidence: {(result.mean_confidence * 100).toFixed(0)}%</span>}>
             {result.warnings.length > 0 && (
               <div className="disclaimer-bar">
                 {result.warnings.map((w, i) => <div key={i}>{w}</div>)}
@@ -174,7 +174,9 @@ export default function MarketIntelligence() {
 
                   {howDetectedIdx === i && (
                     <div className="panel" style={{ marginTop: 8, fontSize: 11, color: "var(--text-mid)" }}>
-                      <div><strong>Trace:</strong> uploaded image → preprocessing (resize/grayscale/CLAHE/threshold) → region detection (Canny + Hough) → OCR word "{f.instrument}" and its nearest numeric token → paired as ({f.metric} = {f.value}{f.unit}) → confidence {(f.confidence * 100).toFixed(0)}% (min of the two OCR word confidences).</div>
+                      <div>
+                        <strong>Trace:</strong> uploaded image → preprocessing (resize/grayscale/CLAHE/threshold) → region detection (Canny + Hough) → OCR detected {f.metric === "yield" ? "the tenor" : "the instrument"} "{f.instrument}" and a numeric token in the same row, to its right → associated by bounding-box geometry (not a whole-page nearest-text search) → parsed as {f.metric} = {f.value}{f.unit} → detection confidence {(f.confidence * 100).toFixed(0)}% (the OCR engine's own confidence for these two words — separate from, and never substituted for, the extracted value itself).
+                      </div>
                       {f.source_region && <div style={{ marginTop: 4 }}>Source pixel region (x, y, w, h): [{f.source_region.join(", ")}]</div>}
                     </div>
                   )}
@@ -187,6 +189,9 @@ export default function MarketIntelligence() {
                       <Badge kind="info">Portfolio updated</Badge>
                       <table className="data-table" style={{ marginTop: 6 }}>
                         <tbody>
+                          {commitResult.resolved_via_tenor_mapping && commitResult.resolved_isin && (
+                            <tr><td style={{ textAlign: "left" }}>Treasury instrument mapping</td><td>{commitResult.instrument_id} tenor → <strong>{commitResult.resolved_isin}</strong></td></tr>
+                          )}
                           <tr><td style={{ textAlign: "left" }}>{commitResult.field}</td><td>{commitResult.previous_value} → <strong>{commitResult.new_value}</strong></td></tr>
                           {commitResult.clean_price_before != null && (
                             <tr><td style={{ textAlign: "left" }}>Clean price</td><td>{commitResult.clean_price_before} → <strong>{commitResult.clean_price_after}</strong></td></tr>

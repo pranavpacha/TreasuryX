@@ -172,6 +172,7 @@ export interface CvExtractionResult {
   id: number;
   original_filename: string;
   chart_type: string;
+  asset_class: string | null;
   image_quality: CvImageQuality;
   stages: Record<string, string>;
   ocr_text_raw: string;
@@ -184,6 +185,8 @@ export interface CvExtractionResult {
 
 export interface CvCommitResult {
   instrument_id: string;
+  resolved_isin?: string;
+  resolved_via_tenor_mapping?: boolean;
   field: string;
   previous_value: number;
   new_value: number;

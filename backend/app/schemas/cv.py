@@ -18,6 +18,7 @@ class CvExtractionResponse(BaseModel):
     id: int
     original_filename: str
     chart_type: str
+    asset_class: str | None = None
     stages: dict  # base64 previews per pipeline stage
     ocr_text_raw: str
     fields: list[ExtractedField]
