@@ -143,6 +143,22 @@ a { color: var(--accent); text-decoration: none; }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 900px) {
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+}
+
+.snapshot-grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) {
+  .snapshot-grid { grid-template-columns: 1fr; }
+}
+
+@keyframes flow-complete-pulse {
+  0% { background-color: transparent; }
+  30% { background-color: rgba(59, 130, 246, 0.18); }
+  100% { background-color: transparent; }
+}
+.flow-complete { animation: flow-complete-pulse 1.4s ease-out; border-radius: 4px; }
 
 .metric {
   display: flex;

@@ -70,6 +70,12 @@ export interface SurfacePlotProps {
   /** Sparse per-vertex normal vectors, off by default -- demonstrates the geometry's
    * computed normals (computeVertexNormals) that lighting/shading depend on. */
   showNormals?: boolean;
+  /** "3d" (default orbit angle) or "top" (camera repositioned directly overhead) -- a
+   * real camera/view-transform change, not a static screenshot or CSS trick. */
+  viewMode?: "3d" | "top";
+  /** Fires with the (row, col) grid indices of a clicked data point, for a persistent
+   * "Selected Point" inspector (distinct from the ephemeral hover tooltip). */
+  onSelectPoint?: (r: number, c: number) => void;
 }
 
 function colorFor(norm: number, mode: "sequential" | "diverging"): THREE.Color {
@@ -248,9 +254,10 @@ function Surface({
 }
 
 function HoverMarkers({
-  values, xLabels, yLabels, formatValue, heightScale,
+  values, xLabels, yLabels, formatValue, heightScale, onSelectPoint,
 }: {
   values: number[][]; xLabels: string[]; yLabels: string[]; formatValue: (v: number) => string; heightScale: number;
+  onSelectPoint?: (r: number, c: number) => void;
 }) {
   const rows = values.length;
   const cols = values[0]?.length ?? 0;
@@ -281,6 +288,7 @@ function HoverMarkers({
           position={p.pos}
           onPointerOver={(e) => { e.stopPropagation(); setHover({ r: p.r, c: p.c, pos: p.pos }); }}
           onPointerOut={() => setHover((h) => (h && h.r === p.r && h.c === p.c ? null : h))}
+          onClick={(e) => { e.stopPropagation(); onSelectPoint?.(p.r, p.c); }}
         >
           <sphereGeometry args={[0.06, 8, 8]} />
           <meshBasicMaterial color={hover && hover.r === p.r && hover.c === p.c ? "#e6e9ef" : "#3b82f6"} transparent opacity={hover && hover.r === p.r && hover.c === p.c ? 1 : 0.35} />
@@ -306,19 +314,23 @@ export function SurfacePlot({
   projectionMode = "perspective", fov = 45, depthTest = true,
   ambientIntensity = 0.55, directionalIntensity = 1.1, onMatrices,
   rotationXDeg = 0, rotationYDeg = 0, rotationZDeg = 0, verticalScale = 1,
-  displayMode = "both", showNormals = false,
+  displayMode = "both", showNormals = false, viewMode = "3d", onSelectPoint,
 }: SurfacePlotProps) {
   if (values.length === 0 || values[0].length === 0) {
     return <div className="empty-state">No data to visualize.</div>;
   }
+  // Top View repositions the camera directly overhead -- a real view-transform change.
+  // Keyed by viewMode so the camera + OrbitControls fully remount on toggle instead of
+  // fighting OrbitControls' own tracked orientation from prior user drags.
+  const camPos: [number, number, number] = viewMode === "top" ? [0, 18, 0.01] : [9, 7, 9];
   return (
     <div>
       <div style={{ height: 380, background: "#05070a", borderRadius: 4, border: "1px solid var(--border)" }}>
         <Canvas>
           {projectionMode === "perspective" ? (
-            <PerspectiveCamera makeDefault position={[9, 7, 9]} fov={fov} near={0.1} far={100} />
+            <PerspectiveCamera key={`persp-${viewMode}`} makeDefault position={camPos} fov={fov} near={0.1} far={100} />
           ) : (
-            <OrthographicCamera makeDefault position={[9, 7, 9]} zoom={45} near={0.1} far={100} />
+            <OrthographicCamera key={`ortho-${viewMode}`} makeDefault position={camPos} zoom={45} near={0.1} far={100} />
           )}
           <ambientLight intensity={ambientIntensity} />
           <directionalLight position={[6, 10, 4]} intensity={directionalIntensity} />
@@ -331,10 +343,10 @@ export function SurfacePlot({
             scale={[1, verticalScale, 1]}
           >
             <Surface values={values} colorMode={colorMode} heightScale={heightScale} renderMode={renderMode} shaderThreshold={shaderThreshold} depthTest={depthTest} onMatrices={onMatrices} displayMode={displayMode} showNormals={showNormals} />
-            <HoverMarkers values={values} xLabels={xLabels} yLabels={yLabels} formatValue={formatValue} heightScale={heightScale} />
+            <HoverMarkers values={values} xLabels={xLabels} yLabels={yLabels} formatValue={formatValue} heightScale={heightScale} onSelectPoint={onSelectPoint} />
           </group>
           <axesHelper args={[6]} />
-          <OrbitControls enablePan enableZoom enableRotate makeDefault />
+          <OrbitControls key={`orbit-${viewMode}`} enablePan enableZoom enableRotate makeDefault />
         </Canvas>
       </div>
       <div style={{ display: "flex", gap: 16, fontSize: 10.5, color: "var(--text-lo)", marginTop: 6 }}>

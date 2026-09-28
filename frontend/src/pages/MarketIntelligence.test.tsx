@@ -36,6 +36,17 @@ const mockExtractionWithModels = {
   },
 };
 
+const mockYieldCurveExtraction = {
+  ...mockExtraction,
+  chart_type: "yield_curve",
+  stages: { original: "data:image/png;base64,YIELD" },
+  fields: [
+    { instrument: "2Y", metric: "yield", value: 6.82, unit: "pct", confidence: 0.9, source_region: [10, 10, 20, 10] },
+    { instrument: "5Y", metric: "yield", value: 6.95, unit: "pct", confidence: 0.88, source_region: [40, 20, 20, 10] },
+    { instrument: "10Y", metric: "yield", value: 7.12, unit: "pct", confidence: 0.93, source_region: [70, 30, 20, 10] },
+  ],
+};
+
 function uploadChart() {
   const file = new File(["fake-image-bytes"], "chart.png", { type: "image/png" });
   const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -156,5 +167,45 @@ describe("Financial Image Intelligence page", () => {
 
     fireEvent.click(screen.getByText("How Detected?"));
     expect(screen.getByText(/Trace:/)).toBeInTheDocument();
+  });
+
+  describe("Market Snapshot", () => {
+    it("reconstructs exactly the extracted points -- no fabricated values", async () => {
+      vi.spyOn(api, "post").mockResolvedValueOnce({ data: mockYieldCurveExtraction });
+      renderPage();
+      uploadChart();
+      await waitFor(() => expect(screen.getByText("Market Snapshot")).toBeInTheDocument());
+
+      // Extraction summary reflects the real pipeline output, not an invented count
+      expect(screen.getByText("Extracted Market Structure")).toBeInTheDocument();
+      expect(screen.getByText("3")).toBeInTheDocument(); // Points extracted -- matches mock field count exactly
+      expect(screen.getByText("yield_curve")).toBeInTheDocument(); // Detected chart type
+      expect(screen.getByText("Reconstructed Market View")).toBeInTheDocument();
+    });
+
+    it("shows nothing to reconstruct (not a fabricated chart) when no numeric values were extracted", async () => {
+      vi.spyOn(api, "post").mockResolvedValueOnce({
+        data: { ...mockExtraction, fields: [{ instrument: null, metric: "unlabeled_value", value: null, unit: "unitless", confidence: 0.2, source_region: null }] },
+      });
+      renderPage();
+      uploadChart();
+      await waitFor(() => expect(screen.getByText("Market Snapshot")).toBeInTheDocument());
+
+      expect(screen.getByText(/nothing to reconstruct/)).toBeInTheDocument();
+    });
+
+    it("clicking an extracted field row selects it and surfaces its real value in the Selected Point panel", async () => {
+      vi.spyOn(api, "post").mockResolvedValueOnce({ data: mockYieldCurveExtraction });
+      renderPage();
+      uploadChart();
+      await waitFor(() => expect(screen.getByText("10Y")).toBeInTheDocument());
+
+      // Click the 10Y row in the extracted-fields table
+      fireEvent.click(screen.getByText("10Y"));
+
+      await waitFor(() => expect(screen.getByText("Selected Point")).toBeInTheDocument());
+      // The panel must show the ACTUAL extracted value (7.12), not a placeholder/fabricated one
+      expect(screen.getByText("7.12pct")).toBeInTheDocument();
+    });
   });
 });

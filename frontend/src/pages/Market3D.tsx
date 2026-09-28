@@ -10,6 +10,7 @@ const TENOR_ORDER = ["1M", "3M", "6M", "1Y", "2Y", "5Y", "10Y", "30Y"];
 function YieldSurfaceTab() {
   const { data, loading, error, reload } = useApi(() => fetchYieldSurface(24));
   const state = useTreasury3DState(0.7);
+  const [selected, setSelected] = useState<{ r: number; c: number } | null>(null);
   const grid = useMemo(() => {
     if (!data) return null;
     const dates = data.dates;
@@ -38,8 +39,21 @@ function YieldSurfaceTab() {
         renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
         rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
         verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
+        viewMode={state.viewMode} onSelectPoint={(r, c) => setSelected({ r, c })}
         onMatrices={state.setMatrices}
       />
+      {selected && (
+        <div className="panel" style={{ marginTop: 8 }}>
+          <div className="panel-title">Selected Point</div>
+          <table className="data-table">
+            <tbody>
+              <tr><td style={{ textAlign: "left" }}>Tenor</td><td>{grid.tenors[selected.c]}</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Observation date</td><td>{grid.dates[selected.r]}</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Yield</td><td>{grid.values[selected.r][selected.c].toFixed(3)}%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -47,6 +61,7 @@ function YieldSurfaceTab() {
 function FxVolSurfaceTab() {
   const { data, loading, error, reload } = useApi(fetchFxVolSurface);
   const state = useTreasury3DState(0.6);
+  const [selected, setSelected] = useState<{ r: number; c: number } | null>(null);
   const grid = useMemo(() => {
     if (!data) return null;
     const windows = data.windows.map(String);
@@ -74,8 +89,21 @@ function FxVolSurfaceTab() {
         renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
         rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
         verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
+        viewMode={state.viewMode} onSelectPoint={(r, c) => setSelected({ r, c })}
         onMatrices={state.setMatrices}
       />
+      {selected && (
+        <div className="panel" style={{ marginTop: 8 }}>
+          <div className="panel-title">Selected Point</div>
+          <table className="data-table">
+            <tbody>
+              <tr><td style={{ textAlign: "left" }}>FX pair</td><td>{grid.pairs[selected.r]}</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Lookback window</td><td>{grid.windows[selected.c]}d</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Annualized volatility</td><td>{grid.values[selected.r][selected.c].toFixed(2)}%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -83,6 +111,7 @@ function FxVolSurfaceTab() {
 function StressSurfaceTab() {
   const { data, loading, error, reload } = useApi(() => fetchStressSurface(9, 9));
   const state = useTreasury3DState(0.55);
+  const [selected, setSelected] = useState<{ r: number; c: number } | null>(null);
   const grid = useMemo(() => {
     if (!data) return null;
     const fxShocks = Array.from(new Set(data.grid.map((g) => g.fx_shock_pct))).sort((a, b) => a - b);
@@ -115,8 +144,21 @@ function StressSurfaceTab() {
         renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
         rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
         verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
+        viewMode={state.viewMode} onSelectPoint={(r, c) => setSelected({ r, c })}
         onMatrices={state.setMatrices}
       />
+      {selected && (
+        <div className="panel" style={{ marginTop: 8 }}>
+          <div className="panel-title">Selected Point</div>
+          <table className="data-table">
+            <tbody>
+              <tr><td style={{ textAlign: "left" }}>FX shock</td><td>{grid.fxShocks[selected.c] > 0 ? "+" : ""}{grid.fxShocks[selected.c]}%</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Rate shock</td><td>{grid.yieldShocks[selected.r] > 0 ? "+" : ""}{grid.yieldShocks[selected.r]}bp</td></tr>
+              <tr><td style={{ textAlign: "left" }}>Portfolio P&amp;L</td><td>₹{grid.values[selected.r][selected.c].toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

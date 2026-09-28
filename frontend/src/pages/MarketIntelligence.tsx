@@ -1,8 +1,19 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Panel } from "../components/Common";
+import { ImageRegionOverlay } from "../components/ImageRegionOverlay";
+import { MarketSnapshotChart } from "../components/MarketSnapshotChart";
 import type { CvCommitResult, CvExtractionResult, CvField } from "../services/api";
 import { commitCvExtraction, correctCvExtraction, uploadCvImage } from "../services/api";
+
+const VISION_VIEWS = [
+  { key: "original", label: "Original" },
+  { key: "edges", label: "Edges" },
+  { key: "thresholded", label: "Segmentation" },
+  { key: "ocr", label: "OCR" },
+  { key: "regions", label: "Detection" },
+] as const;
+type VisionViewKey = (typeof VISION_VIEWS)[number]["key"];
 
 const STAGE_LABELS: Record<string, string> = {
   original: "1. Original (resized)",
@@ -40,14 +51,28 @@ export default function MarketIntelligence() {
   const [showDetails, setShowDetails] = useState(false);
   const [showModelDetails, setShowModelDetails] = useState(false);
   const [howDetectedIdx, setHowDetectedIdx] = useState<number | null>(null);
+  const [selectedFieldIdx, setSelectedFieldIdx] = useState<number | null>(null);
+  const [reconstructionMode, setReconstructionMode] = useState<"curve" | "points">("curve");
+  const [visionTab, setVisionTab] = useState<VisionViewKey>("original");
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [correctedFields, setCorrectedFields] = useState<CvField[]>([]);
+
+  // Points with a numeric value, in extraction order (never re-sorted by an assumed tenor
+  // ordering -- the fields' own order is what the pipeline actually produced).
+  const snapshotPoints = useMemo(
+    () => correctedFields
+      .map((f, i) => ({ f, i }))
+      .filter(({ f }) => f.value != null)
+      .map(({ f, i }) => ({ label: f.instrument ?? `#${i + 1}`, value: f.value as number, fieldIdx: i })),
+    [correctedFields],
+  );
 
   const onUpload = async (file: File) => {
     setUploading(true);
     setError(null);
     setCommitResults({});
+    setSelectedFieldIdx(null);
     try {
       const r = await uploadCvImage(file);
       setResult(r);
@@ -117,8 +142,17 @@ export default function MarketIntelligence() {
             {correctedFields.length === 0 && <div className="empty-state">No structured fields extracted. Try a clearer image.</div>}
             {correctedFields.map((f, i) => {
               const commitResult = commitResults[i];
+              const isSelected = selectedFieldIdx === i;
               return (
-                <div key={i} style={{ borderBottom: "1px solid var(--bg-2)", padding: "8px 0" }}>
+                <div
+                  key={i}
+                  onClick={() => setSelectedFieldIdx(i)}
+                  style={{
+                    borderBottom: "1px solid var(--bg-2)", padding: "8px 6px", cursor: "pointer",
+                    background: isSelected ? "rgba(59,130,246,0.08)" : "transparent",
+                    borderLeft: isSelected ? "2px solid var(--accent)" : "2px solid transparent",
+                  }}
+                >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 90, fontSize: 12 }}>{f.instrument ?? "(unlabeled)"}</span>
                     <span style={{ width: 60, fontSize: 10.5, color: "var(--text-lo)" }}>{f.metric}</span>
@@ -174,6 +208,126 @@ export default function MarketIntelligence() {
                 </div>
               );
             })}
+          </Panel>
+
+          <Panel title="Market Snapshot" right={<Badge kind="info">FOCV → CGVR</Badge>}>
+            <p style={{ fontSize: 11, color: "var(--text-mid)", marginBottom: 4 }}>
+              Turn a market screenshot into an interactive Treasury view.
+            </p>
+            <div
+              key={result.id}
+              className="flow-complete mono"
+              style={{ fontSize: 10.5, color: "var(--text-lo)", marginBottom: 12, padding: "4px 6px" }}
+            >
+              MARKET SCREENSHOT → COMPUTER VISION → STRUCTURED MARKET DATA → INTERACTIVE TREASURY VIEW
+            </div>
+            {snapshotPoints.length === 0 ? (
+              <div className="empty-state">No numeric points were extracted from this image, so there is nothing to reconstruct.</div>
+            ) : (
+              <div className="grid snapshot-grid">
+                <div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-mid)", marginBottom: 4 }}>Original Market Snapshot</div>
+                  <ImageRegionOverlay
+                    src={result.stages.original}
+                    regions={correctedFields.map((f) => f.source_region ? { x: f.source_region[0], y: f.source_region[1], w: f.source_region[2], h: f.source_region[3] } : null)}
+                    selectedIndex={selectedFieldIdx}
+                    onSelect={setSelectedFieldIdx}
+                  />
+                  <div style={{ fontSize: 10, color: "var(--text-lo)", marginTop: 4 }}>
+                    Click a highlighted region, a row above, or a point on the chart — all three stay in sync.
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: 10.5, color: "var(--text-mid)" }}>Reconstructed Market View</div>
+                    <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden", marginLeft: "auto" }}>
+                      <button onClick={() => setReconstructionMode("curve")} style={{ border: "none", borderRadius: 0, fontSize: 10.5, padding: "3px 8px", background: reconstructionMode === "curve" ? "var(--accent)" : "var(--bg-2)", color: reconstructionMode === "curve" ? "white" : "var(--text-mid)" }}>Curve</button>
+                      <button onClick={() => setReconstructionMode("points")} style={{ border: "none", borderRadius: 0, fontSize: 10.5, padding: "3px 8px", background: reconstructionMode === "points" ? "var(--accent)" : "var(--bg-2)", color: reconstructionMode === "points" ? "white" : "var(--text-mid)" }}>Points</button>
+                    </div>
+                  </div>
+                  <MarketSnapshotChart
+                    points={snapshotPoints.map((p) => ({ label: p.label, value: p.value }))}
+                    selectedIndex={snapshotPoints.findIndex((p) => p.fieldIdx === selectedFieldIdx)}
+                    onSelect={(chartIdx) => setSelectedFieldIdx(snapshotPoints[chartIdx].fieldIdx)}
+                    mode={reconstructionMode}
+                    valueLabel={correctedFields[0]?.metric ?? "value"}
+                  />
+
+                  <div className="panel" style={{ marginTop: 10 }}>
+                    <div className="panel-title">Extracted Market Structure</div>
+                    <table className="data-table">
+                      <tbody>
+                        <tr><td style={{ textAlign: "left" }}>Detected chart type</td><td>{result.chart_type}</td></tr>
+                        <tr><td style={{ textAlign: "left" }}>Detected metric</td><td>{correctedFields[0]?.metric ?? "—"}</td></tr>
+                        <tr><td style={{ textAlign: "left" }}>Points extracted</td><td>{snapshotPoints.length}</td></tr>
+                        <tr><td style={{ textAlign: "left" }}>Source</td><td>Uploaded market screenshot</td></tr>
+                        <tr><td style={{ textAlign: "left" }}>Pipeline</td><td style={{ fontSize: 10.5 }}>Preprocess → Edge/Region Detection → OCR → Structuring</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {selectedFieldIdx != null && correctedFields[selectedFieldIdx] && (
+                    <div className="panel" style={{ marginTop: 10 }}>
+                      <div className="panel-title">Selected Point</div>
+                      <table className="data-table">
+                        <tbody>
+                          <tr><td style={{ textAlign: "left" }}>Instrument</td><td>{correctedFields[selectedFieldIdx].instrument ?? "(unlabeled)"}</td></tr>
+                          <tr><td style={{ textAlign: "left" }}>{correctedFields[selectedFieldIdx].metric}</td><td>{correctedFields[selectedFieldIdx].value}{correctedFields[selectedFieldIdx].unit}</td></tr>
+                          <tr><td style={{ textAlign: "left" }}>Source</td><td>Market Snapshot</td></tr>
+                          <tr><td style={{ textAlign: "left" }}>Detection</td><td>OCR + chart structure</td></tr>
+                        </tbody>
+                      </table>
+                      <button
+                        className="primary" style={{ marginTop: 8 }}
+                        disabled={!correctedFields[selectedFieldIdx].instrument || committing === selectedFieldIdx}
+                        onClick={() => applyToTreasury(selectedFieldIdx)}
+                      >
+                        {committing === selectedFieldIdx ? "Applying…" : "Apply to Treasury"}
+                      </button>
+                      {commitResults[selectedFieldIdx] && typeof commitResults[selectedFieldIdx] === "object" && (
+                        <div style={{ fontSize: 11, color: "var(--up)", marginTop: 6 }}>✓ Market Snapshot applied to Treasury analytics.</div>
+                      )}
+                      {commitResults[selectedFieldIdx] && typeof commitResults[selectedFieldIdx] === "string" && (
+                        <div className="error-state" style={{ marginTop: 6 }}>{commitResults[selectedFieldIdx] as string}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Vision View">
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+              {VISION_VIEWS.map((v) => (
+                <button
+                  key={v.key} onClick={() => setVisionTab(v.key)}
+                  style={{ fontSize: 11, background: visionTab === v.key ? "var(--accent)" : "var(--bg-2)", color: visionTab === v.key ? "white" : "var(--text-mid)" }}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            {visionTab === "ocr" ? (
+              <ImageRegionOverlay
+                src={result.stages.original}
+                regions={correctedFields.map((f) => f.source_region ? { x: f.source_region[0], y: f.source_region[1], w: f.source_region[2], h: f.source_region[3] } : null)}
+                selectedIndex={selectedFieldIdx}
+                onSelect={setSelectedFieldIdx}
+                alt="OCR detections"
+              />
+            ) : (
+              <img
+                src={result.stages[visionTab] ?? result.stages.original}
+                alt={visionTab}
+                style={{ width: "100%", maxWidth: 700, border: "1px solid var(--border)", borderRadius: 3, background: "#000" }}
+              />
+            )}
+            <div style={{ fontSize: 10, color: "var(--text-lo)", marginTop: 4 }}>
+              {visionTab === "ocr"
+                ? "Boxes are the actual OCR-detected regions behind each extracted field above (not decorative)."
+                : STAGE_PURPOSE[visionTab] ?? STAGE_PURPOSE.regions}
+            </div>
           </Panel>
 
           <Panel title="Processing Details" right={<button onClick={() => setShowDetails((s) => !s)}>{showDetails ? "Hide" : "Show"}</button>}>

@@ -15,6 +15,7 @@ export interface Treasury3DState {
   verticalScale: number;
   displayMode: "surface" | "wireframe" | "both";
   showNormals: boolean;
+  viewMode: "3d" | "top";
 }
 
 export function useTreasury3DState(initialThreshold = 0.6) {
@@ -28,11 +29,13 @@ export function useTreasury3DState(initialThreshold = 0.6) {
   const [verticalScale, setVerticalScale] = useState(1);
   const [displayMode, setDisplayMode] = useState<"surface" | "wireframe" | "both">("both");
   const [showNormals, setShowNormals] = useState(false);
+  const [viewMode, setViewMode] = useState<"3d" | "top">("3d");
   const resetTransform = () => { setRotationXDeg(0); setRotationYDeg(0); setRotationZDeg(0); setVerticalScale(1); };
   return {
     renderMode, setRenderMode, projectionMode, setProjectionMode, threshold, setThreshold, matrices, setMatrices,
     rotationXDeg, setRotationXDeg, rotationYDeg, setRotationYDeg, rotationZDeg, setRotationZDeg,
     verticalScale, setVerticalScale, displayMode, setDisplayMode, showNormals, setShowNormals, resetTransform,
+    viewMode, setViewMode,
   };
 }
 
@@ -52,6 +55,7 @@ export function Treasury3DControls({
     renderMode, setRenderMode, projectionMode, setProjectionMode, threshold, setThreshold, matrices,
     rotationXDeg, setRotationXDeg, rotationYDeg, setRotationYDeg, rotationZDeg, setRotationZDeg,
     verticalScale, setVerticalScale, displayMode, setDisplayMode, showNormals, setShowNormals, resetTransform,
+    viewMode, setViewMode,
   } = state;
   const transformIsIdentity = rotationXDeg === 0 && rotationYDeg === 0 && rotationZDeg === 0 && verticalScale === 1;
 
@@ -65,6 +69,10 @@ export function Treasury3DControls({
         <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
           <button onClick={() => setProjectionMode("perspective")} style={{ border: "none", borderRadius: 0, background: projectionMode === "perspective" ? "var(--accent)" : "var(--bg-2)", color: projectionMode === "perspective" ? "white" : "var(--text-mid)" }}>Perspective</button>
           <button onClick={() => setProjectionMode("orthographic")} style={{ border: "none", borderRadius: 0, background: projectionMode === "orthographic" ? "var(--accent)" : "var(--bg-2)", color: projectionMode === "orthographic" ? "white" : "var(--text-mid)" }}>Orthographic</button>
+        </div>
+        <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
+          <button onClick={() => setViewMode("3d")} style={{ border: "none", borderRadius: 0, background: viewMode === "3d" ? "var(--accent)" : "var(--bg-2)", color: viewMode === "3d" ? "white" : "var(--text-mid)" }}>3D Perspective</button>
+          <button onClick={() => setViewMode("top")} style={{ border: "none", borderRadius: 0, background: viewMode === "top" ? "var(--accent)" : "var(--bg-2)", color: viewMode === "top" ? "white" : "var(--text-mid)" }}>Top View</button>
         </div>
         <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
           <button onClick={() => setDisplayMode("surface")} style={{ border: "none", borderRadius: 0, background: displayMode === "surface" ? "var(--accent)" : "var(--bg-2)", color: displayMode === "surface" ? "white" : "var(--text-mid)" }}>Surface</button>

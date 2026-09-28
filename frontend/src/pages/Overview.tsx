@@ -110,17 +110,24 @@ export default function Overview() {
             </div>
           )}
         </Panel>
-        <Panel title="Technology Integration">
-          <div className="mono" style={{ fontSize: 10.5, color: "var(--text-lo)", marginBottom: 8 }}>
-            Financial Image → FOCV → Treasury Engine → P&amp;L / Risk → CGVR → 3D Visualization
+        <Panel title="Intelligence Flow">
+          <div className="grid grid-5" style={{ fontSize: 10.5 }}>
+            {[
+              { stage: "Market Data", desc: "FX · Rates · Bonds", to: "/fx" },
+              { stage: "FOCV", desc: "Image → OCR → Structured Data", to: "/intelligence/financial-image" },
+              { stage: "Treasury", desc: "Pricing · P&L · DV01", to: "/rates" },
+              { stage: "Risk", desc: "VaR · Stress · Exposure", to: "/risk" },
+              { stage: "CGVR", desc: "Curves · Heatmaps · 3D Surfaces", to: "/visualization/3d-market" },
+            ].map((s, i, arr) => (
+              <div key={s.stage} style={{ textAlign: "center", position: "relative" }}>
+                <Link to={s.to} style={{ fontWeight: 700, color: "var(--accent)" }}>{s.stage}</Link>
+                <div style={{ color: "var(--text-lo)", marginTop: 3 }}>{s.desc}</div>
+                {i < arr.length - 1 && (
+                  <div className="mono" style={{ position: "absolute", right: -8, top: 0, color: "var(--text-lo)" }}>→</div>
+                )}
+              </div>
+            ))}
           </div>
-          <table className="data-table">
-            <tbody>
-              <tr><td style={{ textAlign: "left", width: 100 }}>FOCV</td><td style={{ textAlign: "left" }}>Financial image understanding — <Link to="/intelligence/financial-image">Financial Image Intelligence</Link></td></tr>
-              <tr><td style={{ textAlign: "left" }}>Treasury Engine</td><td style={{ textAlign: "left" }}>FX / Rates / Risk / Scenario analytics, powering every page</td></tr>
-              <tr><td style={{ textAlign: "left" }}>CGVR</td><td style={{ textAlign: "left" }}>Interactive 3D financial rendering — <Link to="/visualization/3d-market">3D Market</Link></td></tr>
-            </tbody>
-          </table>
         </Panel>
       </div>
     </div>
