@@ -84,12 +84,14 @@ def classify_image_bytes(image_bytes: bytes) -> dict:
     if not model_details_available():
         return {
             "available": False,
+            "headline": "Offline benchmark available",
             "reason": (
-                "Live model inference requires torch, a dev-only dependency not installed in "
-                "this deployment (see backend/requirements-dev.txt). The precomputed CNN vs. "
-                "ViT benchmark -- trained from scratch, real accuracy/F1/confusion-matrix "
-                "results -- is available at Methodology -> Technical Evidence -> "
-                "CNN vs. Vision Transformer."
+                "CNN and ViT were trained from scratch and evaluated on a controlled synthetic "
+                "financial-chart dataset (see Methodology -> Technical Evidence -> CNN vs. "
+                "Vision Transformer for the full accuracy/F1/confusion-matrix results). Live "
+                "per-image model inference is available in the development environment when the "
+                "optional ML dependencies (torch, see backend/requirements-dev.txt) and saved "
+                "model weights are installed."
             ),
         }
 

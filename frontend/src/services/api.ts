@@ -149,6 +149,7 @@ export interface CvModelPrediction {
 
 export interface CvModelDetails {
   available: boolean;
+  headline?: string;
   reason?: string;
   classes?: string[];
   cnn?: CvModelPrediction;

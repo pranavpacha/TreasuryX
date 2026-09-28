@@ -34,13 +34,17 @@ results are shown.
 - Training from scratch keeps every parameter of the comparison (architecture, data, epochs)
   fully under this project's control and fully explainable, which matters more for demonstrating
   the underlying CNN-vs-ViT mechanics than squeezing out maximum accuracy.
-- Both models train in well under a minute on a CPU-only laptop (measured: TinyCNN ~12s,
-  TinyViT ~24s for 18 epochs over 336 training images), so this was practical to do for real.
+- Both models train in well under a minute on a CPU-only laptop (measured: TinyCNN ~10s,
+  TinyViT ~21s for 18 epochs over 336 training images), so this was practical to do for real.
 
 ## Results (measured, not fabricated — see the committed `cnn_vs_vit.json`)
 
-As of this build: TinyCNN reached 100.0% test accuracy, TinyViT reached 98.6%, both on a 72-image
-held-out test split. **Near-ceiling accuracy is expected and not impressive on its own** — the
+As of this build: TinyCNN reached 100.0% test accuracy (100.0% macro F1), TinyViT reached 97.2%
+test accuracy (97.3% macro F1), both on the same 72-image held-out test split (see the committed
+`cnn_vs_vit.json` for the exact figures — training is now seeded via `torch.manual_seed(42)` in
+`train.py`, so re-running `python -m app.cv_engine.models.train` reproduces these numbers exactly
+rather than drifting on every run). **Near-ceiling accuracy is expected and not impressive on its
+own** — the
 four synthetic classes are structurally very distinct (continuous lines vs. discrete bars vs.
 table gridlines), making this closer to a sanity-check task than a hard benchmark. The value of
 this experiment is the controlled architecture comparison (parameter count, training time,

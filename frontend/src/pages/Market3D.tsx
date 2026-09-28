@@ -108,10 +108,58 @@ function FxVolSurfaceTab() {
   );
 }
 
+function StressHeatmap({ grid, selected, onSelect }: {
+  grid: { fxShocks: number[]; yieldShocks: number[]; values: number[][] };
+  selected: { r: number; c: number } | null;
+  onSelect: (r: number, c: number) => void;
+}) {
+  const flat = grid.values.flat();
+  const maxAbs = Math.max(1, ...flat.map((v) => Math.abs(v)));
+  return (
+    <table className="data-table" style={{ tableLayout: "fixed" }}>
+      <thead>
+        <tr>
+          <th style={{ width: 70 }}>Rate \ FX</th>
+          {grid.fxShocks.map((f) => <th key={f}>{f > 0 ? "+" : ""}{f}%</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {grid.yieldShocks.map((y, r) => (
+          <tr key={y}>
+            <td style={{ textAlign: "left", fontWeight: 700 }}>{y > 0 ? "+" : ""}{y}bp</td>
+            {grid.fxShocks.map((f, c) => {
+              const v = grid.values[r][c];
+              const intensity = Math.abs(v) / maxAbs;
+              const isSel = selected?.r === r && selected?.c === c;
+              return (
+                <td
+                  key={f}
+                  onClick={() => onSelect(r, c)}
+                  title={`FX shock ${f > 0 ? "+" : ""}${f}%, rate shock ${y > 0 ? "+" : ""}${y}bp: ₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
+                  style={{
+                    cursor: "pointer",
+                    background: v >= 0 ? `rgba(47,191,113,${0.1 + intensity * 0.6})` : `rgba(229,72,77,${0.1 + intensity * 0.6})`,
+                    outline: isSel ? "2px solid var(--accent)" : "none",
+                    outlineOffset: -2,
+                    fontSize: 10,
+                  }}
+                >
+                  {(v / 1000).toFixed(0)}K
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function StressSurfaceTab() {
   const { data, loading, error, reload } = useApi(() => fetchStressSurface(9, 9));
   const state = useTreasury3DState(0.55);
   const [selected, setSelected] = useState<{ r: number; c: number } | null>(null);
+  const [view, setView] = useState<"3d" | "heatmap">("3d");
   const grid = useMemo(() => {
     if (!data) return null;
     const fxShocks = Array.from(new Set(data.grid.map((g) => g.fx_shock_pct))).sort((a, b) => a - b);
@@ -126,27 +174,42 @@ function StressSurfaceTab() {
   if (!grid.hasPositions) return <div className="empty-state">No open positions — book a simulated FX or bond trade to see the P&L stress surface.</div>;
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 4 }}>
+        <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
+          <button onClick={() => setView("3d")} style={{ border: "none", borderRadius: 0, fontSize: 11, background: view === "3d" ? "var(--accent)" : "var(--bg-2)", color: view === "3d" ? "white" : "var(--text-mid)" }}>3D Surface</button>
+          <button onClick={() => setView("heatmap")} style={{ border: "none", borderRadius: 0, fontSize: 11, background: view === "heatmap" ? "var(--accent)" : "var(--bg-2)", color: view === "heatmap" ? "white" : "var(--text-mid)" }}>2D Heatmap</button>
+        </div>
         <button onClick={reload} title="Re-fetch from the live Treasury engine — pulls in any CV correction, trade, or scenario run since this page loaded">Refresh Data</button>
       </div>
-      <Treasury3DControls
-        state={state}
-        dataMapping={{ source: "GET /api/market3d/stress-surface (real scenario engine, current open positions + any CV-corrected market levels)", xMapping: "USD/INR shock (%)", yMapping: "total portfolio P&L (INR)", zMapping: "parallel yield shock (bps)" }}
-        onThresholdLabel="Loss threshold"
-      />
-      <SurfacePlot
-        xLabels={grid.fxShocks.map((f) => `${f > 0 ? "+" : ""}${f}%`)}
-        yLabels={grid.yieldShocks.map((y) => `${y > 0 ? "+" : ""}${y}bp`)}
-        values={grid.values}
-        xAxisName="USD/INR shock (%)" yAxisName="Total P&L (INR)" zAxisName="Parallel yield shock (bps)"
-        formatValue={(v) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
-        colorMode="diverging"
-        renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
-        rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
-        verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
-        viewMode={state.viewMode} onSelectPoint={(r, c) => setSelected({ r, c })}
-        onMatrices={state.setMatrices}
-      />
+      {view === "heatmap" ? (
+        <>
+          <StressHeatmap grid={grid} selected={selected} onSelect={(r, c) => setSelected({ r, c })} />
+          <div style={{ fontSize: 10, color: "var(--text-lo)", marginTop: 6 }}>
+            Same stress-engine data as the 3D surface — rows are parallel yield shocks, columns are USD/INR shocks, cell color/value is total portfolio P&L. Click a cell, or switch to <button onClick={() => setView("3d")} style={{ fontSize: 10, padding: "1px 4px" }}>3D Surface</button> to see it rendered as a rotatable surface.
+          </div>
+        </>
+      ) : (
+        <>
+          <Treasury3DControls
+            state={state}
+            dataMapping={{ source: "GET /api/market3d/stress-surface (real scenario engine, current open positions + any CV-corrected market levels)", xMapping: "USD/INR shock (%)", yMapping: "total portfolio P&L (INR)", zMapping: "parallel yield shock (bps)" }}
+            onThresholdLabel="Loss threshold"
+          />
+          <SurfacePlot
+            xLabels={grid.fxShocks.map((f) => `${f > 0 ? "+" : ""}${f}%`)}
+            yLabels={grid.yieldShocks.map((y) => `${y > 0 ? "+" : ""}${y}bp`)}
+            values={grid.values}
+            xAxisName="USD/INR shock (%)" yAxisName="Total P&L (INR)" zAxisName="Parallel yield shock (bps)"
+            formatValue={(v) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
+            colorMode="diverging"
+            renderMode={state.renderMode} projectionMode={state.projectionMode} shaderThreshold={state.threshold}
+            rotationXDeg={state.rotationXDeg} rotationYDeg={state.rotationYDeg} rotationZDeg={state.rotationZDeg}
+            verticalScale={state.verticalScale} displayMode={state.displayMode} showNormals={state.showNormals}
+            viewMode={state.viewMode} onSelectPoint={(r, c) => setSelected({ r, c })}
+            onMatrices={state.setMatrices}
+          />
+        </>
+      )}
       {selected && (
         <div className="panel" style={{ marginTop: 8 }}>
           <div className="panel-title">Selected Point</div>

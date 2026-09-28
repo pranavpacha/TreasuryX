@@ -362,7 +362,11 @@ export default function MarketIntelligence() {
             {showModelDetails && (
               !result.model_details.available ? (
                 <div className="empty-state">
-                  {result.model_details.reason}
+                  <strong style={{ color: "var(--text-hi)" }}>{result.model_details.headline ?? "Offline benchmark available"}</strong>
+                  <p style={{ marginTop: 6 }}>
+                    {result.model_details.reason}{" "}
+                    <Link to="/evidence/cv/models">View the CNN vs. Vision Transformer benchmark</Link>.
+                  </p>
                 </div>
               ) : (
                 <>

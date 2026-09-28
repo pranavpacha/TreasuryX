@@ -20,7 +20,7 @@ const mockExtraction = {
   ],
   mean_confidence: 0.91,
   warnings: [],
-  model_details: { available: false, reason: "Live model inference requires torch, a dev-only dependency not installed in this deployment." },
+  model_details: { available: false, headline: "Offline benchmark available", reason: "CNN and ViT were trained from scratch and evaluated on a controlled synthetic financial-chart dataset. Live per-image model inference is available in the development environment when the optional ML dependencies and model weights are installed." },
   image_quality: { width: 300, height: 200, blur_variance: 250.0, contrast_std: 60.0, verdict: "ok" as const, reasons: [], recommendation: null },
 };
 
@@ -113,7 +113,8 @@ describe("Financial Image Intelligence page", () => {
     await waitFor(() => expect(screen.getByText("USD/INR")).toBeInTheDocument());
 
     fireEvent.click(screen.getAllByText("Show")[1]);
-    expect(screen.getByText(/Live model inference requires torch/)).toBeInTheDocument();
+    expect(screen.getByText("Offline benchmark available")).toBeInTheDocument();
+    expect(screen.getByText(/controlled synthetic financial-chart dataset/)).toBeInTheDocument();
   });
 
   it("shows live CNN vs. ViT predictions in Model Details when available", async () => {

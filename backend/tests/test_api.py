@@ -170,6 +170,7 @@ def test_cv_extract_model_details_shape(client):
         assert isinstance(model_details["agree"], bool)
     else:
         assert model_details["reason"]
+        assert model_details["headline"] == "Offline benchmark available"
 
 
 def test_market3d_yield_surface(client):

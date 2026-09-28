@@ -160,6 +160,11 @@ def count_params(model: nn.Module) -> int:
 
 
 def main():
+    # Seeded for reproducibility -- without this, weight init / DataLoader shuffling /
+    # dropout make each training run produce slightly different metrics, which previously
+    # let the committed cnn_vs_vit.json drift out of sync with the numbers written in
+    # docs/cv_models.md. The dataset itself was already seeded (see generate_dataset).
+    torch.manual_seed(42)
     print("Generating synthetic dataset...")
     samples = generate_dataset(n_per_class=120)
     train_s, val_s, test_s = split_dataset(samples)

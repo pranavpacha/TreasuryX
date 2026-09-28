@@ -37,6 +37,26 @@ export default function TechnicalEvidence() {
         </p>
       </Panel>
 
+      <Panel title="Implementation Status">
+        <table className="data-table">
+          <thead><tr><th>Capability</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td style={{ textAlign: "left" }}>Classical CV — preprocessing, edges, Hough, segmentation</td><td>Implemented — production</td></tr>
+            <tr><td style={{ textAlign: "left" }}>OCR</td><td>Implemented — production (degrades gracefully without Tesseract)</td></tr>
+            <tr><td style={{ textAlign: "left" }}>SIFT</td><td>Implemented — production (Compare Market Screens)</td></tr>
+            <tr><td style={{ textAlign: "left" }}>CNN (TinyCNN)</td><td>Trained + benchmarked (synthetic dataset)</td></tr>
+            <tr><td style={{ textAlign: "left" }}>ViT (TinyViT)</td><td>Trained + benchmarked (synthetic dataset)</td></tr>
+            <tr><td style={{ textAlign: "left" }}>Live CNN/ViT per-image inference</td><td>Development-only (requires torch + saved weights)</td></tr>
+            <tr><td style={{ textAlign: "left" }}>Financial object detection (Fast R-CNN/YOLO)</td><td>Not trained</td></tr>
+            <tr><td style={{ textAlign: "left" }}>3D WebGL rendering (geometry, transforms, camera, projection, depth, lighting)</td><td>Implemented — production</td></tr>
+            <tr><td style={{ textAlign: "left" }}>Custom GLSL shader (Risk View)</td><td>Implemented — production</td></tr>
+            <tr><td style={{ textAlign: "left" }}>2D stress heatmap</td><td>Implemented — production (3D Market → Stress Surface → 2D Heatmap)</td></tr>
+            <tr><td style={{ textAlign: "left" }}>CV → Treasury (MarketOverride)</td><td>Implemented — production</td></tr>
+            <tr><td style={{ textAlign: "left" }}>Treasury → 3D</td><td>Implemented — production</td></tr>
+          </tbody>
+        </table>
+      </Panel>
+
       <Panel title="Computer Vision (CS4231) — Supplementary Evidence">
         <div className="grid grid-2">
           {CV_EVIDENCE.map((e) => (
