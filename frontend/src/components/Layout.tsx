@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 
 const WORKSTATION_NAV = [
   { to: "/", label: "Overview" },
@@ -38,7 +39,7 @@ const METHODOLOGY_NAV = [
 function NavSection({ title, items }: { title: string; items: { to: string; label: string }[] }) {
   return (
     <div>
-      <div style={{ padding: "10px 16px 4px", fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: "var(--text-lo)", textTransform: "uppercase" }}>{title}</div>
+      <div className="nav-section-title">{title}</div>
       {items.map((item) => (
         <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) => (isActive ? "active" : "")}>
           {item.label}
@@ -48,12 +49,39 @@ function NavSection({ title, items }: { title: string; items: { to: string; labe
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const now = new Date();
+  const location = useLocation();
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Close the mobile nav drawer automatically whenever the route changes, so picking a
+  // page doesn't leave the overlay sitting on top of the new content.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="app-shell">
       <header className="app-header">
+        <button
+          className="nav-toggle"
+          type="button"
+          aria-label={navOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen((v) => !v)}
+        >
+          <MenuIcon />
+        </button>
         <div className="logo">
           TREASURY<span>X</span>
         </div>
@@ -62,7 +90,8 @@ export function Layout({ children }: { children: ReactNode }) {
           {now.toLocaleDateString("en-IN")} · Asia/Kolkata
         </div>
       </header>
-      <nav className="app-nav">
+      <div className={`nav-scrim ${navOpen ? "open" : ""}`} onClick={() => setNavOpen(false)} aria-hidden="true" />
+      <nav className={`app-nav ${navOpen ? "open" : ""}`} aria-label="Primary">
         <NavSection title="Workstation" items={WORKSTATION_NAV} />
         <NavSection title="Intelligence" items={INTELLIGENCE_NAV} />
         <NavSection title="Vision Models" items={VISION_MODELS_NAV} />
