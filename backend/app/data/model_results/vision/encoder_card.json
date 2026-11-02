@@ -1,0 +1,243 @@
+{
+ "task": "metric learning (Siamese network, contrastive loss) for screenshot similarity",
+ "architecture": "Encoder (4 conv blocks + MLP -> 64-d, L2-normalised) shared by both branches",
+ "params": 251824,
+ "input": "96x64 RGB",
+ "dataset": {
+  "train": 800,
+  "val": 200,
+  "test": 200
+ },
+ "config": {
+  "epochs": 45,
+  "batch_pairs": 64,
+  "loss": "contrastive (margin 1.0) on L2-normalised embeddings",
+  "pairs": "50% positive (same template, different variant), 30% hard negative (same kind, different template), 20% easy negative (different kind)",
+  "augmentation": "+-2px shift, gain/bias/noise"
+ },
+ "thresholds": {
+  "same_template_cosine": 0.953180193901062,
+  "same_kind_cosine": -0.14847517013549805,
+  "near_duplicate_cosine": 0.985,
+  "near_duplicate_note": "heuristic constant, additionally gated by SSIM at inference (see similarity.py)"
+ },
+ "metrics": {
+  "val": {
+   "n_pairs": 1500,
+   "auc_same_template": 0.9962707005463237,
+   "auc_same_template_hard_negatives_only": 0.9936610521988319,
+   "mean_cos_positive": 0.9958686828613281,
+   "mean_cos_hard_negative": 0.1698593646287918,
+   "mean_cos_easy_negative": 0.036798469722270966,
+   "template_retrieval_top1": 1.0,
+   "n_retrieval_queries": 160,
+   "n_gallery_templates": 40,
+   "same_template_accuracy_at_val_threshold": 0.988,
+   "same_kind_accuracy_at_val_threshold": 0.59375
+  },
+  "test": {
+   "n_pairs": 1500,
+   "auc_same_template": 0.9999057449351241,
+   "auc_same_template_hard_negatives_only": 0.9998397881576243,
+   "mean_cos_positive": 0.9960507154464722,
+   "mean_cos_hard_negative": 0.20369622111320496,
+   "mean_cos_easy_negative": -0.01772877760231495,
+   "template_retrieval_top1": 1.0,
+   "n_retrieval_queries": 160,
+   "n_gallery_templates": 40,
+   "same_template_accuracy_at_val_threshold": 0.9933333333333333,
+   "same_kind_accuracy_at_val_threshold": 0.6168478260869565
+  }
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "train_contrastive_loss": 0.122673662006855
+  },
+  {
+   "epoch": 2,
+   "train_contrastive_loss": 0.07965781271457673
+  },
+  {
+   "epoch": 3,
+   "train_contrastive_loss": 0.05621548518538475
+  },
+  {
+   "epoch": 4,
+   "train_contrastive_loss": 0.04725540056824684
+  },
+  {
+   "epoch": 5,
+   "train_contrastive_loss": 0.0419967782497406
+  },
+  {
+   "epoch": 6,
+   "train_contrastive_loss": 0.03699815541505814
+  },
+  {
+   "epoch": 7,
+   "train_contrastive_loss": 0.032638095654547214
+  },
+  {
+   "epoch": 8,
+   "train_contrastive_loss": 0.03335024081170559
+  },
+  {
+   "epoch": 9,
+   "train_contrastive_loss": 0.03315504927188158
+  },
+  {
+   "epoch": 10,
+   "train_contrastive_loss": 0.02953984580934048
+  },
+  {
+   "epoch": 11,
+   "train_contrastive_loss": 0.027722670920193194
+  },
+  {
+   "epoch": 12,
+   "train_contrastive_loss": 0.0289546812325716
+  },
+  {
+   "epoch": 13,
+   "train_contrastive_loss": 0.02598487876355648
+  },
+  {
+   "epoch": 14,
+   "train_contrastive_loss": 0.028278392888605595
+  },
+  {
+   "epoch": 15,
+   "train_contrastive_loss": 0.027039914280176162
+  },
+  {
+   "epoch": 16,
+   "train_contrastive_loss": 0.027341275066137313
+  },
+  {
+   "epoch": 17,
+   "train_contrastive_loss": 0.025511666983366012
+  },
+  {
+   "epoch": 18,
+   "train_contrastive_loss": 0.022499957643449305
+  },
+  {
+   "epoch": 19,
+   "train_contrastive_loss": 0.023947846330702304
+  },
+  {
+   "epoch": 20,
+   "train_contrastive_loss": 0.021516042947769164
+  },
+  {
+   "epoch": 21,
+   "train_contrastive_loss": 0.01750335618853569
+  },
+  {
+   "epoch": 22,
+   "train_contrastive_loss": 0.019963576924055815
+  },
+  {
+   "epoch": 23,
+   "train_contrastive_loss": 0.02085350248962641
+  },
+  {
+   "epoch": 24,
+   "train_contrastive_loss": 0.02147097036242485
+  },
+  {
+   "epoch": 25,
+   "train_contrastive_loss": 0.01955720916390419
+  },
+  {
+   "epoch": 26,
+   "train_contrastive_loss": 0.018651551194489004
+  },
+  {
+   "epoch": 27,
+   "train_contrastive_loss": 0.018523650392889977
+  },
+  {
+   "epoch": 28,
+   "train_contrastive_loss": 0.014202291388064623
+  },
+  {
+   "epoch": 29,
+   "train_contrastive_loss": 0.017910010758787395
+  },
+  {
+   "epoch": 30,
+   "train_contrastive_loss": 0.017345039788633585
+  },
+  {
+   "epoch": 31,
+   "train_contrastive_loss": 0.01770813895389438
+  },
+  {
+   "epoch": 32,
+   "train_contrastive_loss": 0.017793489396572115
+  },
+  {
+   "epoch": 33,
+   "train_contrastive_loss": 0.015440787542611361
+  },
+  {
+   "epoch": 34,
+   "train_contrastive_loss": 0.018079893849790096
+  },
+  {
+   "epoch": 35,
+   "train_contrastive_loss": 0.018075613155961037
+  },
+  {
+   "epoch": 36,
+   "train_contrastive_loss": 0.01696491625159979
+  },
+  {
+   "epoch": 37,
+   "train_contrastive_loss": 0.017393249645829202
+  },
+  {
+   "epoch": 38,
+   "train_contrastive_loss": 0.014234744813293218
+  },
+  {
+   "epoch": 39,
+   "train_contrastive_loss": 0.017256366405636072
+  },
+  {
+   "epoch": 40,
+   "train_contrastive_loss": 0.01546001160517335
+  },
+  {
+   "epoch": 41,
+   "train_contrastive_loss": 0.013819263260811567
+  },
+  {
+   "epoch": 42,
+   "train_contrastive_loss": 0.015886311568319798
+  },
+  {
+   "epoch": 43,
+   "train_contrastive_loss": 0.01545042896643281
+  },
+  {
+   "epoch": 44,
+   "train_contrastive_loss": 0.011537256110459566
+  },
+  {
+   "epoch": 45,
+   "train_contrastive_loss": 0.012838001754134893
+  }
+ ],
+ "onnx_file": "encoder.onnx",
+ "onnx_opset": 13,
+ "onnx_cv2_ok": true,
+ "onnx_parity_max_abs_diff": 2.980232238769531e-07,
+ "onnx_size_kb": 986.4,
+ "honesty_note": "Trained and evaluated on procedurally generated synthetic screenshots (synth.py). Splits are by template, so test templates are unseen layouts -- but they are still synthetic. This is NOT real-world accuracy.",
+ "trained_at": "2026-11-02 19:06:17",
+ "seed": 42,
+ "torch_version": "2.13.0+cpu"
+}

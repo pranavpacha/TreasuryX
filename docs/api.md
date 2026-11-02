@@ -40,6 +40,28 @@ running. Base path for every route below is `/api`.
 | POST | `/academic/cv/optical-flow` | Dense Farneback optical flow between two frames (or one + a synthetic shift) |
 | GET | `/academic/cv/model-benchmarks` | Precomputed CNN vs. ViT training results (accuracy, confusion matrix, training curves, sample predictions) |
 | GET | `/academic/cv/object-detection/status` | Honest `NOT_TRAINED` status + reproducible pipeline spec for deep object detection |
+| GET | `/vision/sample-image?kind=` | A synthetic sample screenshot (no upload needed) for any of the 9 features below |
+| POST | `/vision/digitize` | Chart digitization — reconstructed series, per-point uncertainty, CSV export |
+| POST | `/vision/compare` | Screenshot comparison — SIFT registration, SSIM, label-keyed value diff |
+| POST | `/vision/anomaly` | Visual anomaly detection on a chart screenshot |
+| GET | `/vision/anomaly/sample?anomaly_kind=` | Anomaly detection on a synthetic image with known injected ground truth |
+| POST | `/vision/quality` | Image-quality measurement + recommended-and-applied preprocessing |
+| POST | `/vision/flow` | Optical flow (Farneback + Lucas-Kanade) across 2-10 uploaded frames |
+| POST | `/vision/video` | Start a background video-intelligence job for an uploaded clip |
+| POST | `/vision/video/demo` | Generate and analyze a simulated market-terminal clip (no upload) |
+| GET / DELETE | `/vision/jobs/{id}` | Poll job progress/result, or cancel a running job |
+| POST | `/vision/classify` | 8-class document-type classification (CNN + ViT, ONNX-served) |
+| GET | `/vision/classifier/benchmark` | Real measured accuracy/confusion-matrix for both models |
+| POST | `/vision/similarity/compare` | Siamese cosine similarity + SIFT/SSIM confirmation for two screenshots |
+| GET/POST/DELETE | `/vision/index`, `/vision/index/search`, `/vision/index/seed-synthetic` | Persisted similarity index of previously seen screenshots |
+| GET | `/vision/clip/status` | Whether the real CLIP backend is available in this deployment |
+| POST | `/vision/search/zero-shot` | Text-described image search (CLIP or the keyword fallback) |
+| GET | `/vision/models` | Registry of trained-model status/cards + what was not implemented |
+| POST | `/vision/proposals` | Stage CV-read market value(s) for review — **writes nothing to Treasury** |
+| GET | `/vision/proposals?status=` | List staged proposals |
+| POST | `/vision/proposals/{id}/approve` | Approve (optionally with an analyst-corrected value) — writes the `MarketOverride`, same path as `/cv/commit` |
+| POST | `/vision/proposals/{id}/reject` | Reject a staged proposal |
+| POST/GET | `/vision/events`, `/vision/events/{id}/status` | Intelligence events (video/anomaly findings) for analyst review |
 
 ## Error handling conventions
 

@@ -4,6 +4,8 @@ import re
 from datetime import date
 from pathlib import Path
 
+import cv2
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -19,6 +21,7 @@ from app.models.market_override import MarketOverride
 from app.schemas.cv import CvCommitRequest, CvCorrectionRequest
 from app.services.commit import MarketValueError, apply_market_value
 from app.services.overrides import list_active_overrides
+from app.services.vision_index import add_to_index
 
 router = APIRouter(prefix="/api/cv", tags=["cv"])
 
@@ -64,6 +67,15 @@ async def extract(file: UploadFile, db: Session = Depends(get_db)):
     db.add(record)
     db.commit()
     db.refresh(record)
+
+    # Best-effort: remember this screenshot's layout embedding so Similarity Search (feature 10)
+    # can later find look-alike reports. Indexing must never break extraction.
+    try:
+        img = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_COLOR)
+        if img is not None:
+            add_to_index(db, img, file.filename or "upload", origin="financial_image_intelligence")
+    except Exception:  # noqa: BLE001
+        pass
 
     return {
         "id": record.id,

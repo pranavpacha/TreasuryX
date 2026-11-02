@@ -5,7 +5,11 @@
 ```
 frontend/  React + TypeScript + Vite, dark institutional terminal UI
   src/pages/               Workstation pages (Overview, FxDesk, RatesBonds, Risk, Scenario, ...)
-  src/pages/intelligence/  Intelligence: CompareMarketScreens (SIFT-based screen comparison)
+  src/pages/intelligence/  Intelligence: CompareMarketScreens, ChartDigitization,
+                           VisualAnomalyDetection, VideoIntelligence, ImageQualityAnalyzer,
+                           OpticalFlowPage, SimilaritySearch, ZeroShotSearch -- see
+                           docs/vision_features.md
+  src/pages/models/        Vision Models: DocumentClassifier (8-class CNN vs. ViT)
   src/pages/methodology/   Methodology (documentation): TreasuryMethodology,
                            ComputerVisionMethodology, ComputerGraphicsMethodology, CourseMapping,
                            TechnicalEvidence
@@ -26,10 +30,12 @@ frontend/  React + TypeScript + Vite, dark institutional terminal UI
   src/graphics/            pure-function graphics algorithms (raster line/circle, 2D transform
                            matrices, line clipping, color models) -- no React/Three.js dependency,
                            independently unit-testable; used by the Technical Evidence pages
-  src/services/             typed axios clients (api.ts, academicCvApi.ts) -- the only place that
-                           knows API response shapes
+  src/services/             typed axios clients (api.ts, academicCvApi.ts, visionApi.ts) -- the
+                           only place that knows API response shapes
   src/components/          shared Panel/Metric/Badge/Tooltip/Layout primitives, CvLabShared
-                           upload components, PixelCanvas raster-grid renderer
+                           upload components, PixelCanvas raster-grid renderer, ProposalReview
+                           (stage/approve/reject a CV-read market value, shared by every
+                           vision feature that reads one)
   src/hooks/                useApi -- small loading/error/reload data-fetching hook
 
 backend/app/
@@ -37,8 +43,8 @@ backend/app/
   config.py        pydantic-settings Settings (env-overridable)
   database.py      SQLAlchemy engine/session/Base
   api/             one router per resource (fx, bonds, positions, yield_curve, risk,
-                   scenario, cv, market3d, overview, academic_cv) -- thin, delegates to
-                   finance/, cv_engine/, services/, and data/
+                   scenario, cv, market3d, overview, academic_cv, vision, vision_review) --
+                   thin, delegates to finance/, cv_engine/, services/, and data/
   finance/         pure functions: fx.py, bonds.py, risk_metrics.py, scenario_engine.py, regime.py
                    (no DB or HTTP dependency -- independently unit-testable)
   cv_engine/       preprocessing.py, edges.py, ocr.py, pipeline.py (the applied Financial Image
@@ -50,15 +56,26 @@ backend/app/
                      (TinyViT, written from scratch), train.py (trains both, writes real metrics
                      to data/model_results/cnn_vs_vit.json) -- torch is a DEV-ONLY dependency,
                      not required at API runtime (results are precomputed and committed)
+  cv_engine/vision/  the nine newer CV features -- synth.py (8-kind synthetic screenshot
+                     generator, ground truth by construction), digitize.py, compare.py,
+                     anomaly.py, quality.py, flow.py, video.py, jobs.py (background job runner),
+                     nets.py/train.py/runtime.py (ClassifierCNN/ViT + Siamese Encoder, trained
+                     from scratch, served via ONNX + cv2.dnn -- no torch at runtime),
+                     similarity.py, zeroshot.py -- see docs/vision_features.md
   services/        overrides.py (MarketOverride CRUD -- the CV-to-Treasury state-change
-                   mechanism) and market_view.py (effective_bonds/effective_fx_quotes: baseline
-                   demo data with any active override applied on top) -- see below
+                   mechanism), market_view.py (effective_bonds/effective_fx_quotes: baseline
+                   demo data with any active override applied on top), commit.py (the ONE shared
+                   validate/apply path for a market value, used by both /api/cv/commit and the
+                   vision-proposal approval flow), vision_index.py (Siamese-embedding index) --
+                   see below
   risk/aggregator.py  bridges DB positions + the effective market view -> finance/ functions
   data/            provider.py (abstract MarketDataProvider), demo_provider.py (CSV/JSON-backed),
                    generate_demo_data.py (deterministic synthetic data generator),
                    model_results/ (precomputed CNN/ViT training results, committed to the repo)
   models/          one SQLAlchemy model per table (see docs/database.md), including
-                   market_override.py (the CV-correction state)
+                   market_override.py (the CV-correction state) and vision.py
+                   (VisionProposal/VisionEvent/VisionIndexItem -- the newer features' staged
+                   review and similarity-index state)
   schemas/         pydantic request/response models
   seed.py          idempotent startup seeding (bonds, demo positions, market events)
 ```

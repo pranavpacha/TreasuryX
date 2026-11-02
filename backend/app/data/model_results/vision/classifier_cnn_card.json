@@ -1,0 +1,310 @@
+{
+ "task": "document-type classification (8 classes)",
+ "architecture": "ClassifierCNN (4 conv blocks + MLP)",
+ "params": 195160,
+ "classes": [
+  "yield_curve",
+  "fx_line_chart",
+  "candlestick_chart",
+  "bond_table",
+  "market_report",
+  "risk_dashboard",
+  "portfolio_chart",
+  "financial_statement"
+ ],
+ "input": "96x64 RGB",
+ "dataset": {
+  "train": 800,
+  "val": 200,
+  "test": 200
+ },
+ "train_class_distribution": {
+  "yield_curve": 100,
+  "fx_line_chart": 100,
+  "candlestick_chart": 100,
+  "bond_table": 100,
+  "market_report": 100,
+  "risk_dashboard": 100,
+  "portfolio_chart": 100,
+  "financial_statement": 100
+ },
+ "config": {
+  "epochs": 20,
+  "batch": 32,
+  "optimizer": "AdamW lr=0.002",
+  "augmentation": "gain/bias/noise",
+  "train_time_s": 58.6,
+  "checkpoint_selection": "best validation accuracy"
+ },
+ "metrics": {
+  "val_accuracy": 1.0,
+  "test": {
+   "accuracy": 1.0,
+   "precision_macro": 1.0,
+   "recall_macro": 1.0,
+   "f1_macro": 1.0,
+   "per_class": [
+    {
+     "class": "yield_curve",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "fx_line_chart",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "candlestick_chart",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "bond_table",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "market_report",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "risk_dashboard",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "portfolio_chart",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "financial_statement",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    }
+   ],
+   "confusion_matrix": [
+    [
+     25,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     25,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     25,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     25,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     25,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     25,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     25,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     25
+    ]
+   ],
+   "classes": [
+    "yield_curve",
+    "fx_line_chart",
+    "candlestick_chart",
+    "bond_table",
+    "market_report",
+    "risk_dashboard",
+    "portfolio_chart",
+    "financial_statement"
+   ]
+  },
+  "torch_cpu_inference_ms_mean": 2.555740001844242
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 1.2040054869651795,
+   "val_acc": 0.175
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.26278204411268236,
+   "val_acc": 0.74
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.08213457442820073,
+   "val_acc": 0.995
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.02010327149182558,
+   "val_acc": 0.995
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.008402911946177483,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.007101680659689009,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 7,
+   "train_loss": 0.004327060664072633,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 8,
+   "train_loss": 0.0030820003303233534,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 9,
+   "train_loss": 0.0013658397586550563,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 10,
+   "train_loss": 0.0014629465667530895,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 11,
+   "train_loss": 0.0015357319789472967,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 12,
+   "train_loss": 0.0011858830603887326,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 13,
+   "train_loss": 0.0010600399743998423,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 14,
+   "train_loss": 0.0007378385949414223,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 15,
+   "train_loss": 0.0008927060189307667,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 16,
+   "train_loss": 0.0013528411276638509,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 17,
+   "train_loss": 0.0009233897886588238,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 18,
+   "train_loss": 0.0008990125544369221,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 19,
+   "train_loss": 0.0005655530116928276,
+   "val_acc": 1.0
+  },
+  {
+   "epoch": 20,
+   "train_loss": 0.0005287652484548743,
+   "val_acc": 1.0
+  }
+ ],
+ "onnx_file": "classifier_cnn.onnx",
+ "onnx_opset": 13,
+ "onnx_cv2_ok": true,
+ "onnx_parity_max_abs_diff": 9.5367431640625e-07,
+ "onnx_size_kb": 765.0,
+ "honesty_note": "Trained and evaluated on procedurally generated synthetic screenshots (synth.py). Splits are by template, so test templates are unseen layouts -- but they are still synthetic. This is NOT real-world accuracy.",
+ "trained_at": "2026-11-02 19:07:28",
+ "seed": 42,
+ "torch_version": "2.13.0+cpu"
+}

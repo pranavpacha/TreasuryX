@@ -57,9 +57,20 @@ yield-curve, FX-volatility, and stress surfaces in 3D.
   field) → **Apply to Treasury**, which writes a real state change (a `MarketOverride`) that bond
   pricing, risk, scenarios, and the 3D views all read through immediately — not a one-off
   calculation shown once and discarded.
-- **Compare Market Screens**: upload two Treasury screenshots; SIFT keypoint matching finds shared
-  and changed regions — genuinely useful for spotting a changed number on an otherwise identical
-  report layout.
+- **Chart Digitization**: reconstructs the numeric series behind a yield-curve/FX chart screenshot
+  (axis detection, hue-based curve segmentation, OCR tick calibration) with a stated uncertainty
+  per point; values can be staged and approved into Treasury the same way.
+- **Compare Market Screens**: SIFT+RANSAC registration, SSIM/pixel diffing and label-keyed value
+  comparison between two screenshots — a layout shift is never confused with a market-value change.
+- **Visual Anomaly Detection**, **Video Intelligence** (background-job frame selection + OCR value
+  tracking + event timeline), **Image Quality Analyzer**, **Optical Flow**, **Similarity Search**
+  (Siamese network) and **Zero-Shot Search** (CLIP with an honest keyword fallback) — nine CV
+  features total; every CV-read market value goes through the same staged-proposal approval flow
+  before it can change Treasury state. See [docs/vision_features.md](docs/vision_features.md) for
+  the full writeup (what's trained, what's classical, what's a documented fallback).
+- **CNN vs. Vision Transformer (8-class)** under **Vision Models**: a second, separate classifier
+  pair from the 4-class chart-type benchmark below, trained from scratch and served via ONNX +
+  OpenCV's `cv2.dnn` (no torch at runtime) — see [docs/vision_features.md](docs/vision_features.md).
 
 ### Visualization (Computer Graphics, used as a real rendering pipeline)
 - **3D Market**: yield-curve surface, FX volatility surface, portfolio stress (P&L) surface — real
@@ -142,14 +153,17 @@ accuracy/precision/recall/F1/confusion-matrix benchmark for both models is alway
 independent of torch, at Methodology → Technical Evidence → CNN vs. Vision Transformer. See
 [docs/cv_models.md](docs/cv_models.md) for the full writeup and honest limitations.
 
-Two more Computer Vision capabilities are real product features, reached from **Intelligence** in
-the nav rather than a separate lab: **Compare Market Screens** (SIFT keypoint matching between two
-uploaded screenshots, with a similarity score) and, kept as supplementary **Technical Evidence**
-rather than production features because they're evaluation/benchmark exercises: filter comparison,
-adjustable edge detection, corner/blob detection, GrabCut segmentation (with real IoU/Dice
-benchmarks), and optical flow. Deep object detection (Fast R-CNN/YOLO) is honestly marked
-`NOT_TRAINED` with the reason and a reproducible pipeline spec, rather than faked — see
-Methodology → Technical Evidence → Object Detection Status.
+Nine further Computer Vision capabilities are real product features under **Intelligence** /
+**Vision Models** (chart digitization, screenshot comparison, visual anomaly detection, video
+intelligence, image quality, optical flow, an 8-class CNN/ViT classifier, Siamese similarity
+search, and CLIP-style zero-shot search) — see [docs/vision_features.md](docs/vision_features.md)
+for the full writeup, including the two trained models (classifier, Siamese encoder) served in
+production via ONNX + OpenCV's `cv2.dnn` runner (no torch at runtime). Kept as supplementary
+**Technical Evidence** rather than production features because they're evaluation/benchmark
+exercises: filter comparison, adjustable edge detection, corner/blob detection, GrabCut
+segmentation (with real IoU/Dice benchmarks), and an academic optical-flow demo. Deep object
+detection (Fast R-CNN/YOLO) is honestly marked `NOT_TRAINED` with the reason and a reproducible
+pipeline spec, rather than faked — see Methodology → Technical Evidence → Object Detection Status.
 
 ## 8. Computer Graphics (summary)
 
@@ -198,9 +212,10 @@ See [docs/api.md](docs/api.md) for a written summary of every endpoint.
 - (Optional, for OCR) [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) — on Windows,
   `winget install --id UB-Mannheim.TesseractOCR`. Without it, the CV pipeline still runs every other
   stage and shows a clear warning instead of OCR text.
-- (Optional, only to *regenerate* the CNN/ViT model-benchmark results) `torch` — see
-  [docs/cv_models.md](docs/cv_models.md). Not required to run the app; precomputed results are
-  already committed at `backend/app/data/model_results/cnn_vs_vit.json`.
+- (Optional, only to *regenerate* trained-model results) `torch` and `onnx` — see
+  [docs/cv_models.md](docs/cv_models.md) and [docs/vision_features.md](docs/vision_features.md).
+  Not required to run the app; precomputed results and ONNX weights are already committed at
+  `backend/app/data/model_results/cnn_vs_vit.json` and `backend/app/data/model_results/vision/`.
 
 ### Backend
 ```bash
@@ -243,13 +258,18 @@ Not included in this repository snapshot — run the app locally (Section 12) an
 
 ## 15. Testing
 
-- **Backend**: `cd backend && .venv\Scripts\python -m pytest tests/ -v` — 97 tests covering finance
+- **Backend**: `cd backend && .venv\Scripts\python -m pytest tests/ -v` — 202 tests covering finance
   formulas (FX, bonds, YTM, duration/convexity/DV01, VaR/ES, scenario engine), the CV pipeline
   (synthetic clean/noisy/low-resolution/low-contrast images), the classical CV techniques
-  (filters, edges, SIFT, segmentation, corners/blobs, optical flow), the API (valid/invalid
-  inputs, error responses, end-to-end flows), and the **CV → Treasury → Risk → 3D integration**
-  (committing a corrected value propagates to bonds/positions/risk/stress-surface, and resets
-  cleanly). All 97 pass as of this build.
+  (filters, edges, SIFT, segmentation, corners/blobs, optical flow), the nine `/api/vision/*`
+  features against ground truth from the synthetic generator (digitization accuracy vs. known
+  values, injected-anomaly recall, known-translation optical flow, scripted video-timeline
+  events, classifier/Siamese metrics against chance), the analyst-approval flow (a value never
+  changes Treasury state until explicitly approved, flagged values need confirmation), the API
+  (valid/invalid inputs, error responses, end-to-end flows), and the **CV → Treasury → Risk → 3D
+  integration** (committing a corrected value propagates to bonds/positions/risk/stress-surface,
+  and resets cleanly). All 202 pass as of this build; model-dependent tests skip cleanly (not
+  fail) when the trained ONNX files aren't present.
 - **Frontend**: `cd frontend && npm run test` — Vitest + React Testing Library, 52 tests covering
   formatting utilities, page rendering, the scenario-submission flow, the Financial Image
   Intelligence apply-to-Treasury flow (including that a manual correction is persisted before

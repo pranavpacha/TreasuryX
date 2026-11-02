@@ -11,10 +11,14 @@ provided):
 
 TreasuryX is organized as **Workstation → Intelligence → Visualization → Methodology**, not as
 separate Treasury / Computer-Vision-lab / Computer-Graphics-lab sections. Computer Vision powers
-two real product features (**Financial Image Intelligence**, which turns an uploaded chart/report
-screenshot into a structured value that actually updates bond/FX analytics, risk, and the 3D
-views everywhere else in the app; and **Compare Market Screens**, SIFT-based visual comparison of
-two screenshots). Computer Graphics powers **3D Market**, the production 3D
+ten real product features under **Intelligence** and **Vision Models** — **Financial Image
+Intelligence** (turns an uploaded chart/report screenshot into a structured value that actually
+updates bond/FX analytics, risk, and the 3D views everywhere else in the app), **Chart
+Digitization**, **Compare Market Screens** (SIFT-based), **Visual Anomaly Detection**, **Video
+Intelligence**, **Image Quality Analyzer**, **Optical Flow**, **Similarity Search** (Siamese
+network), **Zero-Shot Search** (CLIP) and **CNN vs. ViT** (8-class) — every CV-read market value
+flowing through one staged-proposal approval step before it can change Treasury state (see
+`docs/vision_features.md`). Computer Graphics powers **3D Market**, the production 3D
 yield/volatility/stress visualization — live transformation matrices, a perspective/orthographic
 toggle, and a hand-written GLSL shader ("Risk View") all run on real Treasury data inside that one
 page. A handful of syllabus topics with no natural Treasury use (raster line-drawing algorithms,
@@ -40,23 +44,23 @@ table is also rendered live in-app at **Methodology → Course Mapping**
 | Edge linking via Hough Transform (M2) | Implemented | Financial Image Intelligence — production region-detection stage |
 | Segmentation — thresholding, morphological processing (M2) | Implemented | Financial Image Intelligence (production: adaptive thresholding + contour-based region detection) + Segmentation evidence (`/evidence/cv/segmentation`: classical GrabCut, real IoU/Dice benchmarks) |
 | Blobs, corner detection (M2) | Implemented | Corner & Blob Detection evidence (`/evidence/cv/features`) |
-| Scale space, SIFT, Lab 3 (M2) | Implemented | **Compare Market Screens** (`/intelligence/compare-screens`) — a real product feature |
-| Optical flow (M2) | Implemented | Optical Flow evidence (`/evidence/cv/optical-flow`) |
-| CNN review, CNNs for recognition (M3) | Implemented | Financial Image Intelligence (`/intelligence/financial-image`, Model Details panel — live per-upload) + CNN vs. ViT evidence (`/evidence/cv/models`) — trained from scratch, real metrics; runs live whenever torch is available (production build omits torch as a dependency, degrades gracefully — see Computer Vision Methodology); does not drive the production chart-type classifier, which is keyword-based |
+| Scale space, SIFT, Lab 3 (M2) | Implemented | **Compare Market Screens** (`/intelligence/compare-screens`) — SIFT+RANSAC registration feeding SSIM diffing and label-keyed value comparison, a real product feature |
+| Optical flow (M2) | Implemented | **Optical Flow** (`/intelligence/optical-flow`) — Farneback + Lucas-Kanade on 2-10 uploaded frames, a real product feature (also powers Video Intelligence); academic demo still at `/evidence/cv/optical-flow` |
+| CNN review, CNNs for recognition (M3) | Implemented | Financial Image Intelligence (Model Details panel, live) + CNN vs. ViT evidence (`/evidence/cv/models`), **and** a second 8-class document-type CNN at **Vision Models → CNN vs. ViT** (`/vision-models/cnn-vs-vit`), trained from scratch and served via ONNX + OpenCV's `cv2.dnn` (no torch at runtime) — see `docs/vision_features.md` |
 | Neural style transfer (M3) | Not implemented | Lecture topic, no corresponding lab |
 | CNNs for object detection — R-CNN, Fast R-CNN, FPN, RetinaNet, Lab 4 (M3) | Not implemented | Requires PASCAL-VOC-scale labeled data + GPU training — Object Detection Status page (`/evidence/cv/object-detection`) documents why + a reproducible pipeline |
 | CNNs for segmentation — FCN, U-Net, Mask-RCNN, Lab 5 (M3) | Partial | Classical GrabCut segmentation implemented and benchmarked (real IoU/Dice) at `/evidence/cv/segmentation` for the in-scope chart-isolation task; U-Net on a medical-imaging dataset is out of scope (wrong domain) |
-| Siamese networks, triplet/contrastive/ranking loss, FaceNet, Lab 6 (M3) | Not implemented | Face verification is off-domain for a Treasury tool and avoids handling biometric data |
+| Siamese networks, triplet/contrastive/ranking loss, FaceNet, Lab 6 (M3) | Implemented | **Similarity Search** (`/intelligence/similarity-search`) — a from-scratch encoder trained with a contrastive loss (50% positive / 30% hard-negative / 20% easy-negative pairs) for document/chart-layout similarity; deliberately not face recognition |
 | 3D CNN / RNN for video understanding, action recognition (M4) | Not implemented | No video data in this project |
-| Attention models, Transformers, Vision Transformers, Lab 7 (M4) | Implemented | Financial Image Intelligence (Model Details panel, live) + CNN vs. ViT evidence (`/evidence/cv/models`) — a ViT written from scratch, trained on the same dataset as the CNN for a direct comparison |
+| Attention models, Transformers, Vision Transformers, Lab 7 (M4) | Implemented | Financial Image Intelligence (Model Details panel, live) + CNN vs. ViT evidence, **and** a second 8-class ViT at **Vision Models → CNN vs. ViT** — both written from scratch, trained on the same dataset as their CNN counterpart for a direct comparison |
 | YOLO (M5) | Not implemented | Same reasoning as Fast R-CNN above |
-| Zero/one/few-shot, self-supervised learning, CLIP, RL in vision (M5) | Not implemented | Lecture-only topics, no corresponding lab in the syllabus |
+| Zero/one/few-shot, self-supervised learning, CLIP, RL in vision (M5) | Partial | **Zero-Shot Search** (`/intelligence/zero-shot-search`) — a real CLIP model when `transformers`/`torch` are available locally, an honestly-labeled keyword-heuristic fallback otherwise (always used on the deployed backend, which does not install those packages). One-shot/few-shot, self-supervised learning and RL-in-vision remain not implemented |
 
-**12/19 topics have real, tested, running code (10 fully implemented, mostly inside actual
-product features rather than a separate lab; 2 partial). The remaining 7 are lecture-only
+**14/19 topics have real, tested, running code (12 fully implemented, mostly inside actual
+product features rather than a separate lab; 2 partial). The remaining 5 are lecture-only
 topics or explicitly out of scope (camera geometry, neural style transfer, deep object
-detection, Siamese/face-verification networks, 3D-CNN/RNN video understanding, YOLO,
-zero-shot/self-supervised/CLIP/RL) — each with a stated reason, none silently omitted.**
+detection, 3D-CNN/RNN video understanding, YOLO) — each with a stated reason, none silently
+omitted. See `docs/vision_features.md` for the full writeup of the nine newer CV features.**
 
 ## CS4104 — Computer Graphics and Virtual Reality
 
@@ -94,7 +98,7 @@ real state change, not a one-off calculation shown once and discarded.
 
 ## Verification
 
-Every "Implemented" row above is covered by a passing automated test (backend: 97/97 pytest;
-frontend: 52/52 vitest, as of this build) or was manually exercised in-browser during development
+Every "Implemented" row above is covered by a passing automated test (backend: 202/202 pytest;
+frontend: 58/58 vitest, as of this build) or was manually exercised in-browser during development
 with a clean console — see `docs/testing.md`. No row claims coverage of a technique that was not
 actually implemented.

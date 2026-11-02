@@ -14,7 +14,14 @@ import Graphics3DLab from "./pages/graphics-lab/Graphics3DLab";
 import Raster2DLab from "./pages/graphics-lab/Raster2DLab";
 import Transform2DLab from "./pages/graphics-lab/Transform2DLab";
 import VrArConceptsLab from "./pages/graphics-lab/VrArConceptsLab";
+import ChartDigitization from "./pages/intelligence/ChartDigitization";
 import CompareMarketScreens from "./pages/intelligence/CompareMarketScreens";
+import ImageQualityAnalyzer from "./pages/intelligence/ImageQualityAnalyzer";
+import OpticalFlowPage from "./pages/intelligence/OpticalFlowPage";
+import SimilaritySearch from "./pages/intelligence/SimilaritySearch";
+import VideoIntelligence from "./pages/intelligence/VideoIntelligence";
+import VisualAnomalyDetection from "./pages/intelligence/VisualAnomalyDetection";
+import ZeroShotSearch from "./pages/intelligence/ZeroShotSearch";
 import Market3D from "./pages/Market3D";
 import MarketIntelligence from "./pages/MarketIntelligence";
 import ComputerGraphicsMethodology from "./pages/methodology/ComputerGraphicsMethodology";
@@ -22,6 +29,7 @@ import ComputerVisionMethodology from "./pages/methodology/ComputerVisionMethodo
 import CourseMapping from "./pages/methodology/CourseMapping";
 import TechnicalEvidence from "./pages/methodology/TechnicalEvidence";
 import TreasuryMethodology from "./pages/methodology/TreasuryMethodology";
+import DocumentClassifier from "./pages/models/DocumentClassifier";
 import Overview from "./pages/Overview";
 import RatesBonds from "./pages/RatesBonds";
 import Risk from "./pages/Risk";
@@ -46,7 +54,17 @@ export default function App() {
 
           {/* INTELLIGENCE */}
           <Route path="/intelligence/financial-image" element={<MarketIntelligence />} />
+          <Route path="/intelligence/chart-digitization" element={<ChartDigitization />} />
           <Route path="/intelligence/compare-screens" element={<CompareMarketScreens />} />
+          <Route path="/intelligence/anomaly-detection" element={<VisualAnomalyDetection />} />
+          <Route path="/intelligence/video" element={<VideoIntelligence />} />
+          <Route path="/intelligence/image-quality" element={<ImageQualityAnalyzer />} />
+          <Route path="/intelligence/optical-flow" element={<OpticalFlowPage />} />
+          <Route path="/intelligence/similarity-search" element={<SimilaritySearch />} />
+          <Route path="/intelligence/zero-shot-search" element={<ZeroShotSearch />} />
+
+          {/* VISION MODELS */}
+          <Route path="/vision-models/cnn-vs-vit" element={<DocumentClassifier />} />
 
           {/* VISUALIZATION */}
           <Route path="/visualization/3d-market" element={<Market3D />} />

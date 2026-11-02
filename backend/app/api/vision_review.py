@@ -7,22 +7,26 @@ Analyst-review layer for computer-vision output (/api/vision/*):
               valuation, positions, risk and stress testing. Flagged values need an explicit second
               confirmation. Nothing is ever overwritten silently: every decision is audit-logged.
   events    : intelligence events (video changes, visual anomalies) for review -- observations only.
+  index     : Siamese similarity index (feature 10) of previously seen screenshots.
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.vision_common import NpResponse
+from app.api.vision_common import NpResponse, read_image
+from app.cv_engine.vision import runtime, similarity, synth
 from app.data.provider import MarketDataProvider
 from app.database import get_db
 from app.dependencies import get_provider
 from app.models.audit_log import AuditLog
-from app.models.vision import VisionEvent, VisionProposal
+from app.models.vision import VisionEvent, VisionIndexItem, VisionProposal
 from app.services.commit import MarketValueError, apply_market_value, validate_market_value
+from app.services.vision_index import add_to_index
 
 router = APIRouter(prefix="/api/vision", tags=["vision-review"], default_response_class=NpResponse)
 
@@ -175,3 +179,69 @@ def set_event_status(eid: int, status: str = Query(..., pattern="^(open|acknowle
     e.status = status
     db.commit()
     return _event_out(e)
+
+
+# ================================================================ similarity index (feature 10)
+def _index_items(db: Session) -> list[dict]:
+    return [{"id": i.id, "filename": i.filename, "origin": i.origin, "kind_guess": i.kind_guess, "embedding": i.embedding, "thumbnail": i.thumbnail,
+             "created_at": i.created_at.isoformat()} for i in db.query(VisionIndexItem).all()]
+
+
+@router.get("/index")
+def list_index(db: Session = Depends(get_db)):
+    items = _index_items(db)
+    return {"count": len(items), "items": [{k: v for k, v in i.items() if k != "embedding"} for i in items], "encoder": runtime.model_status("encoder")}
+
+
+@router.post("/index")
+async def index_upload(file: UploadFile, db: Session = Depends(get_db)):
+    img, _, name = await read_image(file)
+    item = await run_in_threadpool(add_to_index, db, img, name, "upload")
+    if item is None:
+        raise HTTPException(503, "Siamese encoder unavailable (encoder.onnx missing); nothing was indexed.")
+    return {"id": item.id, "filename": item.filename, "kind_guess": item.kind_guess}
+
+
+@router.post("/index/seed-synthetic")
+async def index_seed(db: Session = Depends(get_db)):
+    """Adds one SYNTHETIC screenshot per document type so search has something to find on a fresh install."""
+    if not runtime.model_status("encoder")["available"]:
+        raise HTTPException(503, "Siamese encoder unavailable")
+    existing = {i.filename for i in db.query(VisionIndexItem).filter_by(origin="synthetic_reference").all()}
+    n = 0
+    for kind in synth.KINDS:
+        name = f"synthetic:{kind}#26"
+        if name in existing:
+            continue
+        await run_in_threadpool(add_to_index, db, synth.render(kind, 26, 0).image, name, "synthetic_reference")
+        n += 1
+    return {"added": n}
+
+
+@router.post("/index/search")
+async def index_search(file: UploadFile, top_k: int = Query(6, ge=1, le=20), db: Session = Depends(get_db)):
+    img, _, name = await read_image(file)
+    emb = await run_in_threadpool(runtime.embed, img)
+    if emb is None:
+        raise HTTPException(503, "Siamese encoder unavailable (encoder.onnx missing)")
+    items = _index_items(db)
+    card = runtime.card("encoder") or {}
+    thr = card.get("thresholds", {})
+    ranked = similarity.rank(emb, items, top_k)
+    for r in ranked:
+        label = similarity.verdict(r["similarity"], None, {"near_duplicate_cosine": thr.get("near_duplicate_cosine", 0.985), "same_template_cosine": thr.get("same_template_cosine", 0.9),
+                                                            "same_kind_cosine": thr.get("same_kind_cosine", 0.7)})["label"]
+        r["verdict"] = "near_duplicate_candidate" if label == "near_duplicate" else label
+    return {"query": name, "index_size": len(items), "results": ranked, "thresholds": thr,
+            "note": "Learned similarity on embeddings only; SSIM/SIFT region evidence is available by comparing two images directly (Similarity Search -> Compare). "
+                    "Near-duplicate needs SSIM confirmation, hence 'candidate'."}
+
+
+@router.delete("/index/{iid}")
+def index_delete(iid: int, db: Session = Depends(get_db)):
+    it = db.get(VisionIndexItem, iid)
+    if it is None:
+        raise HTTPException(404, "Not found")
+    db.delete(it)
+    db.commit()
+    return {"deleted": iid}

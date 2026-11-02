@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Float, Integer, String
+from sqlalchemy import JSON, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -47,3 +47,18 @@ class VisionEvent(Base, TimestampMixin):
     detail_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     source_ref: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="open")  # open | acknowledged | dismissed
+
+
+class VisionIndexItem(Base, TimestampMixin):
+    """A previously seen screenshot, stored as a Siamese embedding (feature 10) + small thumbnail --
+    not the full image -- so Similarity Search can find previously uploaded reports with a similar layout."""
+    __tablename__ = "vision_index"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    filename: Mapped[str] = mapped_column(String, nullable=False)
+    origin: Mapped[str] = mapped_column(String, nullable=False, default="upload")  # upload | financial_image_intelligence | synthetic_reference
+    kind_guess: Mapped[str | None] = mapped_column(String, nullable=True)
+    embedding: Mapped[list] = mapped_column(JSON, nullable=False)
+    thumbnail: Mapped[str] = mapped_column(Text, nullable=False)
+    width: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    height: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -1,0 +1,67 @@
+{
+ "kinds": [
+  "yield_curve",
+  "fx_line_chart",
+  "candlestick_chart",
+  "bond_table",
+  "market_report",
+  "risk_dashboard",
+  "portfolio_chart",
+  "financial_statement"
+ ],
+ "det_classes": [
+  "chart_region",
+  "table_region",
+  "legend",
+  "axis_labels",
+  "header",
+  "risk_section",
+  "value_label",
+  "footnote"
+ ],
+ "seg_classes": [
+  "background",
+  "curve",
+  "text",
+  "table",
+  "axes",
+  "legend"
+ ],
+ "templates_per_kind": 30,
+ "variants_per_template": 5,
+ "split_templates": {
+  "train": [
+   0,
+   19
+  ],
+  "val": [
+   20,
+   24
+  ],
+  "test": [
+   25,
+   29
+  ]
+ },
+ "images_per_split": {
+  "train": 800,
+  "val": 200,
+  "test": 200
+ },
+ "images_total": 1200,
+ "class_distribution_per_split": {
+  "train": 100,
+  "val": 25,
+  "test": 25
+ },
+ "base_resolution": [
+  480,
+  320
+ ],
+ "note": "Synthetic, procedurally generated. Splits are made by template; variants of a template never cross splits.",
+ "cache_split_counts": {
+  "train": 800,
+  "val": 200,
+  "test": 200
+ }
+}

@@ -1,27 +1,32 @@
 """
-Computer-vision intelligence endpoints (/api/vision/*) -- five features:
-  1. chart digitization        POST /digitize
-  2. screenshot comparison     POST /compare
-  3. video intelligence        POST /video, /video/demo, GET/DELETE /jobs/{id}   (includes optical flow + frame selection)
-  4. visual anomaly detection  POST /anomaly
-  5. image quality analyzer    POST /quality
+Computer-vision intelligence endpoints (/api/vision/*):
+  1. chart digitization         POST /digitize
+  4. screenshot comparison      POST /compare
+  6. visual anomaly detection   POST /anomaly
+  5. image quality analyzer     POST /quality
+  7. optical flow               POST /flow
+  8. video intelligence         POST /video, /video/demo, GET/DELETE /jobs/{id}
+  9. CNN vs ViT classification  POST /classify, GET /classifier/benchmark
+ 10. Siamese similarity         POST /similarity/compare   (pairwise; the stored index lives in vision_review.py)
+ 11. zero-shot text search      POST /search/zero-shot, GET /clip/status
 All heavy work runs in the threadpool (never on the event loop); video runs as a cancellable background job.
 Nothing here writes Treasury state -- that happens only through the approval flow in vision_review.py.
 """
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
 import cv2
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.vision_common import NpResponse, read_image, save_video_temp
 from app.cv_engine.preprocessing import to_base64_png
-from app.cv_engine.vision import anomaly, compare, digitize, flow, quality, synth, video
+from app.cv_engine.vision import anomaly, compare, digitize, flow, quality, runtime, similarity, synth, video, zeroshot
 from app.cv_engine.vision.jobs import store
 from app.database import get_db
 from app.models.vision import VisionEvent
@@ -164,5 +169,92 @@ def job_cancel(job_id: str):
     if job is None:
         raise HTTPException(404, "Unknown or expired job")
     return store.public(job, include_result=False)
+
+
+def _need(name: str):
+    st = runtime.model_status(name)
+    if not st["available"]:
+        raise HTTPException(503, f"Model '{name}' is not available: {st['reason']}")
+
+
+# ---------------------------------------------------------------- 9. classifier (CNN vs ViT)
+@router.post("/classify")
+async def classify_image(file: UploadFile):
+    img, _, name = await read_image(file)
+    res = await run_in_threadpool(runtime.classify, img)
+    if not any(v.get("available") for v in res.values()):
+        raise HTTPException(503, "Classifier models are not available (ONNX files missing).")
+    cards = {k: runtime.card(f"classifier_{k}") for k in ("cnn", "vit")}
+    return {"filename": name, "predictions": res, "agree": (res["cnn"].get("label") == res["vit"].get("label")) if all(v.get("available") for v in res.values()) else None,
+            "classes": synth.KINDS, "architectures": {k: (c or {}).get("architecture") for k, c in cards.items()},
+            "domain_gap_note": "Both models were trained on SYNTHETIC screenshots. A prediction on a real screenshot is a genuine inference, but its reliability on real layouts is unmeasured."}
+
+
+@router.get("/classifier/benchmark")
+def classifier_benchmark():
+    cards = {k: runtime.card(f"classifier_{k}") for k in ("cnn", "vit")}
+    if not all(cards.values()):
+        raise HTTPException(404, "Classifier model cards not found -- run `python -m app.cv_engine.vision.train classifiers`.")
+    return {"cnn": cards["cnn"], "vit": cards["vit"], "dataset": _manifest(), "caveat": "Metrics are on held-out synthetic templates, not real screenshots."}
+
+
+# ---------------------------------------------------------------- 10. similarity (pairwise)
+@router.post("/similarity/compare")
+async def similarity_compare(file_a: UploadFile, file_b: UploadFile):
+    a, _, na = await read_image(file_a)
+    b, _, nb = await read_image(file_b)
+    try:
+        res = await run_in_threadpool(similarity.compare_pair, a, b)
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    return {"filename_a": na, "filename_b": nb, **res}
+
+
+# ---------------------------------------------------------------- 11. zero-shot search
+@router.get("/clip/status")
+def clip_status():
+    return zeroshot.clip_status()
+
+
+@router.post("/search/zero-shot")
+async def zero_shot(query: str = Form(...), backend: str = Form("auto"), include_reference: bool = Form(True), files: list[UploadFile] = File(default=[])):
+    query = query.strip()
+    if not query or len(query) > 300:
+        raise HTTPException(400, "Query must be 1-300 characters")
+    if backend not in ("auto", "clip", "fallback"):
+        raise HTTPException(400, "backend must be auto, clip or fallback")
+    named = []
+    for f in files:
+        img, _, name = await read_image(f)
+        named.append((name, img))
+    if include_reference:
+        named += zeroshot.reference_gallery(2)
+    if not named:
+        raise HTTPException(400, "Nothing to search: upload images or include the synthetic reference gallery")
+    if len(named) > 40:
+        raise HTTPException(400, "At most 40 candidate images")
+    try:
+        res = await run_in_threadpool(zeroshot.search, query, named, "fallback" if backend == "fallback" else backend)
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    thumbs = {n: to_base64_png(cv2.resize(i, (240, int(240 * i.shape[0] / i.shape[1])), interpolation=cv2.INTER_AREA)) for n, i in named}
+    for r in res["results"]:
+        r["thumbnail"] = thumbs[r["name"]]
+        r["synthetic_reference"] = r["name"].startswith("synthetic:")
+    return res
+
+
+# ---------------------------------------------------------------- model registry
+def _manifest() -> dict | None:
+    p = runtime.MODEL_DIR / "dataset_manifest.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@router.get("/models")
+def model_registry():
+    def brief(name: str):
+        return {"status": runtime.model_status(name), "card": runtime.card(name)}
+    return {"models": {k: brief(k) for k in ("classifier_cnn", "classifier_vit", "encoder")}, "dataset": _manifest(), "clip": zeroshot.clip_status(),
+            "not_implemented": ["Object detection / segmentation -- out of scope for this build", "Few-shot recognition / self-supervised learning -- out of scope for this build"]}
 
 

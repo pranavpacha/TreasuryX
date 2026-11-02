@@ -13,8 +13,17 @@ const WORKSTATION_NAV = [
 
 const INTELLIGENCE_NAV = [
   { to: "/intelligence/financial-image", label: "Financial Image Intelligence" },
+  { to: "/intelligence/chart-digitization", label: "Chart Digitization" },
   { to: "/intelligence/compare-screens", label: "Compare Market Screens" },
+  { to: "/intelligence/anomaly-detection", label: "Visual Anomaly Detection" },
+  { to: "/intelligence/video", label: "Video Intelligence" },
+  { to: "/intelligence/image-quality", label: "Image Quality Analyzer" },
+  { to: "/intelligence/optical-flow", label: "Optical Flow" },
+  { to: "/intelligence/similarity-search", label: "Similarity Search" },
+  { to: "/intelligence/zero-shot-search", label: "Zero-Shot Search" },
 ];
+
+const VISION_MODELS_NAV = [{ to: "/vision-models/cnn-vs-vit", label: "CNN vs. ViT" }];
 
 const VISUALIZATION_NAV = [{ to: "/visualization/3d-market", label: "3D Market" }];
 
@@ -56,6 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <nav className="app-nav">
         <NavSection title="Workstation" items={WORKSTATION_NAV} />
         <NavSection title="Intelligence" items={INTELLIGENCE_NAV} />
+        <NavSection title="Vision Models" items={VISION_MODELS_NAV} />
         <NavSection title="Visualization" items={VISUALIZATION_NAV} />
         <NavSection title="Methodology" items={METHODOLOGY_NAV} />
       </nav>

@@ -19,6 +19,9 @@ PostgreSQL DSN requires no schema changes.
 | `market_overrides` | `MarketOverride` | **The CV-to-Treasury state-change mechanism**: latest-wins correction per (instrument_type, instrument_id, field), applied on top of baseline demo data by `services/market_view.py` — this is what makes "Apply to Treasury" a real, persistent change instead of a one-off calculation |
 | `market_events` | `MarketEvent` | Demo market-intelligence headlines shown on the Overview page |
 | `audit_logs` | `AuditLog` | Generic append-only audit entries (CV corrections/commits, etc.) |
+| `vision_proposals` | `VisionProposal` | A market value read by a newer CV feature (digitization, comparison), staged for analyst review; `status` pending/approved/rejected; approval calls the same `services/commit.py::apply_market_value` that writes a `market_overrides` row |
+| `vision_events` | `VisionEvent` | Observations from video/anomaly detection for analyst review — never writes a `market_overrides` row itself |
+| `vision_index` | `VisionIndexItem` | One Siamese embedding + small thumbnail per screenshot seen (uploaded, or auto-indexed from Financial Image Intelligence), backing Similarity Search |
 
 `backend/app/seed.py::seed_all` idempotently seeds `bonds`, a handful of illustrative demo
 `positions`, and `market_events` on first startup (checked via row counts, so re-running is a no-op).

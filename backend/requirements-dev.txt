@@ -9,6 +9,13 @@
 # inference on a freshly uploaded image; otherwise it serves the precomputed results and
 # says so explicitly.
 #
+# onnx is used ONLY by app/cv_engine/vision/train.py to export the trained classifier/Siamese-
+# encoder PyTorch models to ONNX. The exported .onnx files (committed under
+# app/data/model_results/vision/) are then served in production via opencv-python's cv2.dnn
+# ONNX runner -- so production needs neither torch nor onnx, only opencv-python-headless
+# (already in requirements.txt).
+#
 # Install with: pip install -r requirements-dev.txt --extra-index-url https://download.pytorch.org/whl/cpu
 -r requirements.txt
 torch
+onnx

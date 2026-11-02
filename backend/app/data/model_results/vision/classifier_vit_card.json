@@ -1,0 +1,510 @@
+{
+ "task": "document-type classification (8 classes)",
+ "architecture": "ClassifierViT (patch 8, dim 64, depth 3, 4 heads, learned pos-embed)",
+ "params": 119560,
+ "classes": [
+  "yield_curve",
+  "fx_line_chart",
+  "candlestick_chart",
+  "bond_table",
+  "market_report",
+  "risk_dashboard",
+  "portfolio_chart",
+  "financial_statement"
+ ],
+ "input": "96x64 RGB",
+ "dataset": {
+  "train": 800,
+  "val": 200,
+  "test": 200
+ },
+ "train_class_distribution": {
+  "yield_curve": 100,
+  "fx_line_chart": 100,
+  "candlestick_chart": 100,
+  "bond_table": 100,
+  "market_report": 100,
+  "risk_dashboard": 100,
+  "portfolio_chart": 100,
+  "financial_statement": 100
+ },
+ "config": {
+  "epochs": 60,
+  "batch": 32,
+  "optimizer": "AdamW lr=0.001",
+  "augmentation": "gain/bias/noise",
+  "train_time_s": 138.9,
+  "checkpoint_selection": "best validation accuracy"
+ },
+ "metrics": {
+  "val_accuracy": 0.885,
+  "test": {
+   "accuracy": 0.905,
+   "precision_macro": 0.9133116883116883,
+   "recall_macro": 0.905,
+   "f1_macro": 0.9056596701649176,
+   "per_class": [
+    {
+     "class": "yield_curve",
+     "precision": 0.696969696969697,
+     "recall": 0.92,
+     "f1": 0.793103448275862,
+     "support": 25
+    },
+    {
+     "class": "fx_line_chart",
+     "precision": 0.8,
+     "recall": 0.8,
+     "f1": 0.8000000000000002,
+     "support": 25
+    },
+    {
+     "class": "candlestick_chart",
+     "precision": 0.8095238095238095,
+     "recall": 0.68,
+     "f1": 0.7391304347826089,
+     "support": 25
+    },
+    {
+     "class": "bond_table",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "market_report",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "risk_dashboard",
+     "precision": 1.0,
+     "recall": 0.84,
+     "f1": 0.9130434782608696,
+     "support": 25
+    },
+    {
+     "class": "portfolio_chart",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    },
+    {
+     "class": "financial_statement",
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0,
+     "support": 25
+    }
+   ],
+   "confusion_matrix": [
+    [
+     23,
+     2,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     5,
+     20,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     5,
+     3,
+     17,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     25,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     25,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     4,
+     0,
+     0,
+     21,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     25,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     25
+    ]
+   ],
+   "classes": [
+    "yield_curve",
+    "fx_line_chart",
+    "candlestick_chart",
+    "bond_table",
+    "market_report",
+    "risk_dashboard",
+    "portfolio_chart",
+    "financial_statement"
+   ]
+  },
+  "torch_cpu_inference_ms_mean": 2.8456424988689832
+ },
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 2.1461682224273684,
+   "val_acc": 0.15
+  },
+  {
+   "epoch": 2,
+   "train_loss": 2.030259122848511,
+   "val_acc": 0.24
+  },
+  {
+   "epoch": 3,
+   "train_loss": 1.830065836906433,
+   "val_acc": 0.2
+  },
+  {
+   "epoch": 4,
+   "train_loss": 1.5939884567260743,
+   "val_acc": 0.25
+  },
+  {
+   "epoch": 5,
+   "train_loss": 1.44834312915802,
+   "val_acc": 0.47
+  },
+  {
+   "epoch": 6,
+   "train_loss": 1.1558228325843811,
+   "val_acc": 0.56
+  },
+  {
+   "epoch": 7,
+   "train_loss": 0.9514860105514527,
+   "val_acc": 0.565
+  },
+  {
+   "epoch": 8,
+   "train_loss": 0.7832687842845917,
+   "val_acc": 0.665
+  },
+  {
+   "epoch": 9,
+   "train_loss": 0.6217198026180267,
+   "val_acc": 0.71
+  },
+  {
+   "epoch": 10,
+   "train_loss": 0.42898425221443176,
+   "val_acc": 0.71
+  },
+  {
+   "epoch": 11,
+   "train_loss": 0.27620341718196867,
+   "val_acc": 0.815
+  },
+  {
+   "epoch": 12,
+   "train_loss": 0.3113726836442947,
+   "val_acc": 0.77
+  },
+  {
+   "epoch": 13,
+   "train_loss": 0.19438191920518874,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 14,
+   "train_loss": 0.1752130438387394,
+   "val_acc": 0.875
+  },
+  {
+   "epoch": 15,
+   "train_loss": 0.10057980075478554,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 16,
+   "train_loss": 0.06351682782173157,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 17,
+   "train_loss": 0.09549324076622724,
+   "val_acc": 0.885
+  },
+  {
+   "epoch": 18,
+   "train_loss": 0.08694382913410664,
+   "val_acc": 0.825
+  },
+  {
+   "epoch": 19,
+   "train_loss": 0.05620653714984655,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 20,
+   "train_loss": 0.038115516398102046,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 21,
+   "train_loss": 0.016543266754597427,
+   "val_acc": 0.835
+  },
+  {
+   "epoch": 22,
+   "train_loss": 0.014911424685269594,
+   "val_acc": 0.855
+  },
+  {
+   "epoch": 23,
+   "train_loss": 0.006693343687802553,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 24,
+   "train_loss": 0.03883466050028801,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 25,
+   "train_loss": 0.02018528088927269,
+   "val_acc": 0.85
+  },
+  {
+   "epoch": 26,
+   "train_loss": 0.06550651058554649,
+   "val_acc": 0.835
+  },
+  {
+   "epoch": 27,
+   "train_loss": 0.052659008298069236,
+   "val_acc": 0.84
+  },
+  {
+   "epoch": 28,
+   "train_loss": 0.04799973791465163,
+   "val_acc": 0.855
+  },
+  {
+   "epoch": 29,
+   "train_loss": 0.030633057337254285,
+   "val_acc": 0.875
+  },
+  {
+   "epoch": 30,
+   "train_loss": 0.016788263879716395,
+   "val_acc": 0.845
+  },
+  {
+   "epoch": 31,
+   "train_loss": 0.004138990063220263,
+   "val_acc": 0.85
+  },
+  {
+   "epoch": 32,
+   "train_loss": 0.003361134184524417,
+   "val_acc": 0.845
+  },
+  {
+   "epoch": 33,
+   "train_loss": 0.0029315134603530167,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 34,
+   "train_loss": 0.002539889980107546,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 35,
+   "train_loss": 0.002360015413723886,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 36,
+   "train_loss": 0.0022394364094361664,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 37,
+   "train_loss": 0.0021218869369477034,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 38,
+   "train_loss": 0.001998698157258332,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 39,
+   "train_loss": 0.0019124224781990051,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 40,
+   "train_loss": 0.001781083163805306,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 41,
+   "train_loss": 0.0017304925434291363,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 42,
+   "train_loss": 0.0016456793993711472,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 43,
+   "train_loss": 0.001556600802578032,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 44,
+   "train_loss": 0.0015097393514588474,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 45,
+   "train_loss": 0.0014710667682811618,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 46,
+   "train_loss": 0.0014111693063750862,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 47,
+   "train_loss": 0.001355517297051847,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 48,
+   "train_loss": 0.0013764803623780607,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 49,
+   "train_loss": 0.0012534203100949526,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 50,
+   "train_loss": 0.0012141088861972093,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 51,
+   "train_loss": 0.001162169980816543,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 52,
+   "train_loss": 0.0011089333705604075,
+   "val_acc": 0.86
+  },
+  {
+   "epoch": 53,
+   "train_loss": 0.0010732344770804049,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 54,
+   "train_loss": 0.001047043390572071,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 55,
+   "train_loss": 0.001024739039130509,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 56,
+   "train_loss": 0.0009698726981878281,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 57,
+   "train_loss": 0.0009416411025449634,
+   "val_acc": 0.87
+  },
+  {
+   "epoch": 58,
+   "train_loss": 0.0009110320103354752,
+   "val_acc": 0.865
+  },
+  {
+   "epoch": 59,
+   "train_loss": 0.0009937570546753704,
+   "val_acc": 0.84
+  },
+  {
+   "epoch": 60,
+   "train_loss": 0.0008771662344224751,
+   "val_acc": 0.84
+  }
+ ],
+ "onnx_file": "classifier_vit.onnx",
+ "onnx_opset": 17,
+ "onnx_cv2_ok": true,
+ "onnx_parity_max_abs_diff": 9.5367431640625e-07,
+ "onnx_size_kb": 487.7,
+ "honesty_note": "Trained and evaluated on procedurally generated synthetic screenshots (synth.py). Splits are by template, so test templates are unseen layouts -- but they are still synthetic. This is NOT real-world accuracy.",
+ "trained_at": "2026-11-02 19:09:47",
+ "seed": 42,
+ "torch_version": "2.13.0+cpu"
+}

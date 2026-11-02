@@ -2,7 +2,8 @@
 
 ## Backend — `cd backend && .venv\Scripts\python -m pytest tests/ -v`
 
-97 tests, all passing as of this build:
+202 tests, all passing as of this build (114 pre-existing across finance/CV/API, plus 88 added
+across four new test files for the nine `/api/vision/*` features below):
 
 - **`test_fx.py`** (10 tests) — FX P&L long/short profit/loss, invalid-rate handling, log/simple
   return correctness against manually-computed values, volatility zero-variance and scaling checks.
@@ -18,16 +19,22 @@
 - **`test_scenario.py`** (6 tests) — FX long/short shock direction, bond long-position P&L sign for
   yield up/down, combined-scenario total additivity, curve-tilt differential impact on short vs.
   long maturities.
-- **`test_cv.py`** (12 tests) — preprocessing produces every expected stage; edge detection finds
+- **`test_cv.py`** (17 tests) — preprocessing produces every expected stage; edge detection finds
   edges on a synthetic square; chart-region and Hough-line detection on a synthetic chart; chart-type
   classification (yield curve / FX / unknown); end-to-end pipeline on clean, Gaussian-noisy,
   low-resolution, and near-blank ("difficult") synthetic images without crashing; corrupt input
-  raises `ValueError`.
-- **`test_api.py`** (24 tests) — health check; overview demo-flag/disclaimer; FX quotes/history
+  raises `ValueError`; the G-Sec yield-curve OCR regression (no duplicate rows, no OCR-confidence-
+  as-value bug, "G-SEC" asset-class text never paired as an instrument); image-quality assessment
+  flags a low-res/blurry/low-contrast image and passes a sharp one.
+- **`test_api.py`** (25 tests) — health check; overview demo-flag/disclaimer; FX quotes/history
   (valid + invalid pair → 404); FX trade booking + invalid pair (400) + negative quantity (422);
   bonds list + YTM endpoint + unknown ISIN (404); yield-curve default + compare/classification; risk
   summary structure; scenario run + history; CV extract (bad extension/empty file → 400, valid image
   → 200, corrupt image → 400); market3d yield/vol/stress surfaces; trade blotter.
+- **`test_market_view.py`** (7 tests) — tenor-string parsing (months/years, rejects non-tenors);
+  `find_bond_by_tenor` matches the closest bond within tolerance, matches a short tenor to a
+  near-maturity bond, returns `None` (never a best-effort guess) when nothing is close enough,
+  excludes already-matured bonds, and never invents an ISIN.
 
 - **`test_academic_cv.py`** (18 tests) — filter comparison produces all variants and actually
   smooths noise; Sobel/Laplacian/DoG/LoG run without error and respond correctly to threshold
@@ -44,11 +51,44 @@
   a committed FX correction propagates to `/api/fx/quotes` and open FX positions; and
   `DELETE /api/cv/overrides` cleanly restores baseline demo data everywhere.
 
+- **`test_vision_core.py`** (32 tests) — synthetic-dataset integrity (disjoint template splits,
+  deterministic rendering, valid annotations for all 8 kinds); the image-quality analyzer detects
+  injected blur/noise/low-contrast/skew/90°-rotation and that enhancement is re-measured, not
+  assumed; chart digitization recovers every plotted yield-curve tenor within 2 pixels of
+  calibrated value and FX-series points within their stated uncertainty >90% of the time, and
+  returns **no** numeric value when OCR/calibration is unavailable; screenshot comparison tells a
+  genuine value change (`10Y 6.85 -> 7.02`) apart from a pure pixel translation (`layout_change`,
+  zero value changes); visual anomaly detection finds every injected gap/spike and raises nothing
+  on a clean chart; optical flow recovers a known pixel translation via Lucas-Kanade.
+- **`test_vision_video.py`** (9 tests) — the frame-selection policy keeps changed+settled frames
+  and drops redundant ones, waits for a still-moving screen to settle, and the budget pruner keeps
+  the highest-scoring frames plus first/last; the simulated demo video's detected event timeline
+  (value changes, scene change, chart motion) matches its scripted ground truth, in chronological
+  order; the background job store reports progress, cancels cooperatively, fails gracefully on an
+  exception, and stays bounded.
+- **`test_vision_api.py`** (21 tests) — upload validation (bad extension/empty/corrupt/oversized)
+  across every endpoint; each feature endpoint's shape; and, most importantly, the **approval
+  flow**: creating a proposal changes zero Treasury state; approval propagates to `/api/bonds`
+  and `/api/fx/quotes` with correct before/after analytics; an analyst can correct the value before
+  approving; a flagged (implausible/large-jump) value requires explicit confirmation and is
+  rejected without it; invalid/unmappable values are never staged; rejecting leaves state
+  untouched; a video job creates events but never touches market data; the existing G-Sec OCR
+  regression and FX-screenshot extraction still work end to end into a staged proposal.
+- **`test_vision_models.py`** (15 tests) + **`test_vision_models_api.py`** (11 tests) — the 8-class
+  CNN/ViT classifier predicts a valid class with real probabilities/timing and beats chance on
+  held-out synthetic templates, with real measured metrics in its model card; the Siamese encoder
+  scores a same-template pair higher than a different-kind pair and a self-comparison as
+  `near_duplicate`; the similarity index add/search/delete lifecycle, and that a
+  Financial-Image-Intelligence upload is auto-indexed; zero-shot search ranks a matching document
+  type above a mismatched one via the fallback backend and reports `clip_ran: false` honestly when
+  CLIP isn't installed; every model-dependent test **skips** (not fails) when the trained ONNX
+  files aren't present, matching the project's own graceful-degradation pattern.
+
 Uses an isolated SQLite file per test (`tests/conftest.py`, FastAPI `dependency_overrides`) — tests
-never touch the developer's working `treasuryx.db`. The CNN/ViT training script
-(`app/cv_engine/models/train.py`) is exercised manually during development (not in the pytest
-suite, since it requires the dev-only `torch` dependency and takes tens of seconds) — see
-[cv_models.md](cv_models.md).
+never touch the developer's working `treasuryx.db`. The CNN/ViT training scripts
+(`app/cv_engine/models/train.py`, `app/cv_engine/vision/train.py`) are exercised manually during
+development (not in the pytest suite, since they require the dev-only `torch`/`onnx` dependencies
+and take minutes) — see [cv_models.md](cv_models.md) and [vision_features.md](vision_features.md).
 
 ## Frontend — `cd frontend && npm run test`
 
@@ -96,4 +136,11 @@ suite, since it requires the dev-only `torch` dependency and takes tens of secon
   which depends on the (optional, separately-installed) Tesseract binary.
 - CNN/ViT accuracy is measured on synthetic data only (see [cv_models.md](cv_models.md)) — not
   covered by an automated regression test since it requires the dev-only `torch` dependency.
+- The nine new `/api/vision/*` frontend pages (`frontend/src/pages/intelligence/*`,
+  `frontend/src/pages/models/DocumentClassifier.tsx`) have no dedicated Vitest component tests —
+  coverage comes from the comprehensive backend API test suite above (every endpoint's valid/
+  invalid/unavailable paths) plus manual in-browser verification of each page during development
+  (chart digitization, the stage→approve→propagate-to-Rates&Bonds flow, zero-shot search with the
+  CLIP-unavailable fallback, and the Siamese similarity index all exercised live against the
+  running backend). This mirrors the existing gap noted above for full page-rendering E2E coverage.
 - No load/performance testing.
