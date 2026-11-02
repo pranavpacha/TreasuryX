@@ -17,8 +17,8 @@ def client(tmp_path):
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     from app.models import (  # noqa: F401
-        audit_log, bond, cv_extraction, fx_quote, market_event,
-        pnl_snapshot, position, risk_metric, scenario, trade, yield_curve,
+        audit_log, bond, cv_extraction, fx_quote, market_event, market_override,
+        pnl_snapshot, position, risk_metric, scenario, trade, vision, yield_curve,
     )
     Base.metadata.create_all(bind=engine)
 

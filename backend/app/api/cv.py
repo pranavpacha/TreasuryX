@@ -13,14 +13,12 @@ from app.cv_engine.pipeline import run_pipeline
 from app.data.provider import MarketDataProvider
 from app.database import get_db
 from app.dependencies import get_provider
-from app.finance.bonds import duration_convexity_dv01
 from app.models.audit_log import AuditLog
 from app.models.cv_extraction import CvExtraction
 from app.models.market_override import MarketOverride
-from app.risk.aggregator import get_bond_positions, get_fx_positions
 from app.schemas.cv import CvCommitRequest, CvCorrectionRequest
-from app.services.market_view import effective_fx_rate, find_bond_by_tenor, tenor_to_years
-from app.services.overrides import list_active_overrides, set_override
+from app.services.commit import MarketValueError, apply_market_value
+from app.services.overrides import list_active_overrides
 
 router = APIRouter(prefix="/api/cv", tags=["cv"])
 
@@ -115,68 +113,10 @@ def commit(req: CvCommitRequest, db: Session = Depends(get_db), provider: Market
         raise HTTPException(400, "No matching extracted field found for the given instrument_id")
     value = float(match["value"])
 
-    if req.target == "fx":
-        previous = effective_fx_rate(db, provider, req.instrument_id)
-        if previous is None:
-            raise HTTPException(400, f"Unknown FX pair {req.instrument_id}")
-        set_override(db, "FX", req.instrument_id, "rate", value, source="cv_extraction", cv_extraction_id=record.id)
-
-        affected_positions = [
-            {"pair": p.pair, "notional_base": p.notional_base, "pnl_inr": round(p.pnl, 2)}
-            for p in get_fx_positions(db, provider) if p.pair == req.instrument_id
-        ]
-        analytics = {
-            "instrument_id": req.instrument_id, "field": "spot rate",
-            "previous_value": previous, "new_value": value, "delta": round(value - previous, 4),
-            "affected_open_positions": affected_positions,
-        }
-
-    elif req.target == "bond_yield":
-        bond = next((b for b in provider.get_bonds() if b.isin == req.instrument_id), None)
-        resolved_via_tenor = False
-        if bond is None:
-            # req.instrument_id wasn't a real ISIN -- if it's a recognized tenor (e.g. "10Y",
-            # as extracted from a yield-curve screenshot), map it to whichever bond's CURRENT
-            # years-to-maturity is closest, recomputed at request time (see
-            # services/market_view.py::find_bond_by_tenor for why this can't be a static
-            # table). Never invent a bond identifier for a tenor with no reasonable match.
-            tenor_years = tenor_to_years(req.instrument_id)
-            if tenor_years is not None:
-                bond = find_bond_by_tenor(provider.get_bonds(), tenor_years, date.today())
-                resolved_via_tenor = bond is not None
-        if bond is None:
-            raise HTTPException(
-                400,
-                f"Recognized tenor '{req.instrument_id}' (yield {value}%) has no closely-matching "
-                "instrument in the Treasury pricing engine -- mapping unavailable for this tenor.",
-            )
-        years = max(0.05, (date.fromisoformat(bond.maturity_date) - date.today()).days / 365.25)
-
-        dur_before = duration_convexity_dv01(bond.face, bond.coupon_rate, bond.current_yield / 100.0, years, bond.frequency)
-        dur_after = duration_convexity_dv01(bond.face, bond.coupon_rate, value / 100.0, years, bond.frequency)
-
-        set_override(db, "BOND", bond.isin, "yield_pct", value, source="cv_extraction", cv_extraction_id=record.id)
-
-        affected_positions = [
-            {
-                "isin": p.isin, "quantity_face": p.quantity,
-                "market_value_before_inr": None, "market_value_after_inr": round(p.market_value, 2),
-                "dv01_after_inr": round(p.dv01, 2),
-            }
-            for p in get_bond_positions(db, provider) if p.isin == bond.isin
-        ]
-        analytics = {
-            "instrument_id": req.instrument_id, "resolved_isin": bond.isin, "resolved_via_tenor_mapping": resolved_via_tenor,
-            "field": "yield",
-            "previous_value": bond.current_yield, "new_value": value, "delta_bps": round((value - bond.current_yield) * 100, 1),
-            "clean_price_before": round(dur_before.price, 4), "clean_price_after": round(dur_after.price, 4),
-            "modified_duration_after": round(dur_after.modified_duration, 4),
-            "convexity_after": round(dur_after.convexity, 4),
-            "dv01_per_100_face_after": round(dur_after.dv01, 6),
-            "affected_open_positions": affected_positions,
-        }
-    else:
-        raise HTTPException(400, f"Unsupported commit target {req.target}")
+    try:
+        analytics = apply_market_value(db, provider, req.target, req.instrument_id, value, source="cv_extraction", cv_extraction_id=record.id)
+    except MarketValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
     record.committed_to_engine = True
     db.add(AuditLog(action="CV_COMMIT", entity_type="cv_extraction", entity_id=str(record.id), detail_json=analytics))
